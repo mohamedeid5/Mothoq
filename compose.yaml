@@ -9,11 +9,6 @@ x-app: &app
       WWWUSER: ${WWWUSER:-1000}
   image: mothoq-app:dev
   working_dir: /var/www/html
-  env_file:
-    - path: .env
-      required: false
-  environment:
-    DB_ROOT_PASSWORD: ""
   volumes:
     - .:/var/www/html
     - vendor_data:/var/www/html/vendor

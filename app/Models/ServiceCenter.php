@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
@@ -68,6 +69,14 @@ class ServiceCenter extends Model
         return $this->hasMany(CenterImage::class);
     }
 
+    public function coverImage(): HasOne
+    {
+        return $this->hasOne(CenterImage::class)
+            ->where('is_cover', true)
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
     public function openingHours(): HasMany
     {
         return $this->hasMany(OpeningHour::class);
@@ -83,6 +92,45 @@ class ServiceCenter extends Model
     protected function verified(Builder $query): Builder
     {
         return $query->whereNotNull('verified_at');
+    }
+
+    #[Scope]
+    protected function publiclyAvailable(Builder $query): Builder
+    {
+        return $query->whereHas('city', fn (Builder $cityQuery): Builder => $cityQuery
+            ->where('is_active', true)
+            ->whereHas('governorate', fn (Builder $governorateQuery): Builder => $governorateQuery
+                ->where('is_active', true)));
+    }
+
+    #[Scope]
+    protected function inGovernorate(Builder $query, string $slug): Builder
+    {
+        return $query->whereHas('city.governorate', fn (Builder $governorateQuery): Builder => $governorateQuery
+            ->where('slug', $slug));
+    }
+
+    #[Scope]
+    protected function inCity(Builder $query, string $slug): Builder
+    {
+        return $query->whereHas('city', fn (Builder $cityQuery): Builder => $cityQuery
+            ->where('slug', $slug));
+    }
+
+    #[Scope]
+    protected function providesService(Builder $query, string $slug): Builder
+    {
+        return $query->whereHas('services', fn (Builder $serviceQuery): Builder => $serviceQuery
+            ->where('slug', $slug)
+            ->where('is_active', true));
+    }
+
+    #[Scope]
+    protected function supportsCarBrand(Builder $query, string $slug): Builder
+    {
+        return $query->whereHas('carBrands', fn (Builder $brandQuery): Builder => $brandQuery
+            ->where('slug', $slug)
+            ->where('is_active', true));
     }
 
     protected function casts(): array
