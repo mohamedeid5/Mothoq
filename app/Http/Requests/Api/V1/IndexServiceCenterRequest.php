@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1;
 
 use App\Models\City;
+use App\Queries\ServiceCenters\PublicServiceCenterFilters;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -14,6 +15,21 @@ class IndexServiceCenterRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    public function filters(): PublicServiceCenterFilters
+    {
+        $validated = $this->validated();
+
+        return new PublicServiceCenterFilters(
+            governorate: isset($validated['governorate']) ? (string) $validated['governorate'] : null,
+            city: isset($validated['city']) ? (string) $validated['city'] : null,
+            service: isset($validated['service']) ? (string) $validated['service'] : null,
+            carBrand: isset($validated['car_brand']) ? (string) $validated['car_brand'] : null,
+            verified: array_key_exists('verified', $validated) ? $this->boolean('verified') : null,
+            page: isset($validated['page']) ? (int) $validated['page'] : 1,
+            perPage: isset($validated['per_page']) ? (int) $validated['per_page'] : 15,
+        );
     }
 
     /**
