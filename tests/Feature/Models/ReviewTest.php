@@ -41,4 +41,27 @@ class ReviewTest extends TestCase
 
         Review::factory()->for($user)->for($serviceCenter)->create();
     }
+
+    public function test_published_scope_excludes_unpublished_reviews(): void
+    {
+        Review::factory()->create();
+        $publishedReview = Review::factory()->published()->create();
+
+        $reviews = Review::query()->published()->get();
+
+        $this->assertCount(1, $reviews);
+        $this->assertTrue($reviews->first()->is($publishedReview));
+    }
+
+    public function test_soft_deleted_customer_remains_available_to_review_history(): void
+    {
+        $customer = User::factory()->create();
+        $review = Review::factory()->for($customer)->create();
+
+        $customer->delete();
+        $review->refresh();
+
+        $this->assertSoftDeleted($customer);
+        $this->assertTrue($review->user->is($customer));
+    }
 }

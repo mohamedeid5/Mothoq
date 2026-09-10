@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\ReviewStatus;
 use Database\Factories\ReviewFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,12 +20,19 @@ class Review extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function serviceCenter(): BelongsTo
     {
         return $this->belongsTo(ServiceCenter::class);
+    }
+
+    #[Scope]
+    protected function published(Builder $query): Builder
+    {
+        return $query->where('status', ReviewStatus::Published)
+            ->whereNotNull('published_at');
     }
 
     protected function casts(): array

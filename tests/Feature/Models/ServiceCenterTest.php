@@ -21,8 +21,8 @@ class ServiceCenterTest extends TestCase
     public function test_exposes_the_relationships_needed_by_a_center_profile(): void
     {
         $city = City::factory()->create();
-        $creator = User::factory()->admin()->create();
-        $serviceCenter = ServiceCenter::factory()->for($city)->for($creator, 'creator')->create();
+        $owner = User::factory()->centerOwner()->create();
+        $serviceCenter = ServiceCenter::factory()->for($city)->for($owner, 'owner')->create();
         $services = Service::factory()->count(2)->create();
         $carBrands = CarBrand::factory()->count(2)->create();
         $serviceCenter->services()->attach($services);
@@ -31,10 +31,10 @@ class ServiceCenterTest extends TestCase
         $openingHour = OpeningHour::factory()->for($serviceCenter)->create();
         $review = Review::factory()->for($serviceCenter)->create();
 
-        $serviceCenter->load(['city', 'creator', 'services', 'carBrands', 'images', 'openingHours', 'reviews']);
+        $serviceCenter->load(['city', 'owner', 'services', 'carBrands', 'images', 'openingHours', 'reviews']);
 
         $this->assertTrue($serviceCenter->city->is($city));
-        $this->assertTrue($serviceCenter->creator->is($creator));
+        $this->assertTrue($serviceCenter->owner->is($owner));
         $this->assertCount(2, $serviceCenter->services);
         $this->assertCount(2, $serviceCenter->carBrands);
         $this->assertTrue($serviceCenter->images->contains($image));
@@ -64,5 +64,17 @@ class ServiceCenterTest extends TestCase
         $this->assertCount(1, $serviceCenters);
         $this->assertTrue($serviceCenters->first()->is($verifiedCenter));
         $this->assertInstanceOf(\DateTimeInterface::class, $verifiedCenter->verified_at);
+    }
+
+    public function test_published_reviews_exclude_unpublished_reviews(): void
+    {
+        $serviceCenter = ServiceCenter::factory()->create();
+        Review::factory()->for($serviceCenter)->create();
+        $publishedReview = Review::factory()->for($serviceCenter)->published()->create();
+
+        $serviceCenter->load('publishedReviews');
+
+        $this->assertCount(1, $serviceCenter->publishedReviews);
+        $this->assertTrue($serviceCenter->publishedReviews->first()->is($publishedReview));
     }
 }

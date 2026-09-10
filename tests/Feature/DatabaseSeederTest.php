@@ -18,11 +18,14 @@ class DatabaseSeederTest extends TestCase
         $this->seed();
 
         $admin = User::query()->where('email', 'admin@mothoq.test')->firstOrFail();
+        $owner = User::query()->where('email', 'owner@mothoq.test')->firstOrFail();
         $serviceCenter = ServiceCenter::query()
-            ->with(['city.governorate', 'services', 'carBrands', 'openingHours', 'images', 'reviews'])
+            ->with(['owner', 'city.governorate', 'services', 'carBrands', 'openingHours', 'images', 'reviews'])
             ->firstOrFail();
 
         $this->assertSame(UserRole::Admin, $admin->role);
+        $this->assertSame(UserRole::CenterOwner, $owner->role);
+        $this->assertTrue($serviceCenter->owner->is($owner));
         $this->assertDatabaseCount('governorates', 3);
         $this->assertDatabaseCount('cities', 7);
         $this->assertDatabaseCount('services', 8);

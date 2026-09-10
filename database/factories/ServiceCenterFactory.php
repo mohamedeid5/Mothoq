@@ -25,7 +25,7 @@ class ServiceCenterFactory extends Factory
 
         return [
             'city_id' => City::factory(),
-            'created_by' => User::factory(),
+            'owner_id' => User::factory()->centerOwner(),
             'name' => $name,
             'slug' => Str::slug($name),
             'description' => fake()->paragraph(),

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('service_centers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('city_id')->constrained()->restrictOnDelete();
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('owner_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description')->nullable();

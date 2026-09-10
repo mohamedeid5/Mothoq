@@ -51,4 +51,11 @@ class UserFactory extends Factory
             'role' => UserRole::Admin,
         ]);
     }
+
+    public function centerOwner(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'role' => UserRole::CenterOwner,
+        ]);
+    }
 }

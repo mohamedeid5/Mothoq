@@ -18,12 +18,22 @@ class ServiceCenterSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::query()->firstOrCreate(
+        User::query()->firstOrCreate(
             ['email' => 'admin@mothoq.test'],
             [
                 'name' => 'مدير موثوق',
                 'password' => 'password',
                 'role' => UserRole::Admin,
+                'email_verified_at' => now(),
+            ],
+        );
+
+        $owner = User::query()->firstOrCreate(
+            ['email' => 'owner@mothoq.test'],
+            [
+                'name' => 'صاحب مركز موثوق',
+                'password' => 'password',
+                'role' => UserRole::CenterOwner,
                 'email_verified_at' => now(),
             ],
         );
@@ -66,7 +76,7 @@ class ServiceCenterSeeder extends Seeder
                 ['slug' => $centerData['slug']],
                 [
                     'city_id' => City::query()->where('slug', $centerData['city'])->valueOrFail('id'),
-                    'created_by' => $admin->id,
+                    'owner_id' => $owner->id,
                     'name' => $centerData['name'],
                     'description' => 'مركز متخصص يقدم خدمات صيانة وفحص السيارات.',
                     'phone' => $centerData['phone'],

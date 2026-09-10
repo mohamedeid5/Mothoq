@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'city_id',
-    'created_by',
+    'owner_id',
     'name',
     'slug',
     'description',
@@ -38,9 +38,9 @@ class ServiceCenter extends Model
         return $this->belongsTo(City::class);
     }
 
-    public function creator(): BelongsTo
+    public function owner(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class);
     }
 
     public function services(): BelongsToMany
@@ -56,6 +56,11 @@ class ServiceCenter extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function publishedReviews(): HasMany
+    {
+        return $this->reviews()->published();
     }
 
     public function images(): HasMany
