@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Models;
 
+use App\Enums\ServiceCenterStatus;
 use App\Models\CarBrand;
 use App\Models\CenterImage;
 use App\Models\City;
@@ -10,7 +11,6 @@ use App\Models\Review;
 use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
-use App\ServiceCenterStatus;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
 

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\DayOfWeek;
+use App\Enums\DayOfWeek;
 use Database\Factories\OpeningHourFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

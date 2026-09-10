@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use App\Models\ServiceCenter;
 use App\Models\User;
-use App\UserRole;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
 

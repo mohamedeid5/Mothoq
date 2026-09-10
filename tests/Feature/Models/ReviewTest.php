@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Models;
 
+use App\Enums\ReviewStatus;
 use App\Models\Review;
 use App\Models\ServiceCenter;
 use App\Models\User;
-use App\ReviewStatus;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;

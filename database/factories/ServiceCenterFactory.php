@@ -2,10 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Enums\ServiceCenterStatus;
 use App\Models\City;
 use App\Models\ServiceCenter;
 use App\Models\User;
-use App\ServiceCenterStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

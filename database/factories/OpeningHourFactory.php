@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\DayOfWeek;
+use App\Enums\DayOfWeek;
 use App\Models\OpeningHour;
 use App\Models\ServiceCenter;
 use Illuminate\Database\Eloquent\Factories\Factory;
