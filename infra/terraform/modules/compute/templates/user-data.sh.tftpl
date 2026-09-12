@@ -46,34 +46,6 @@ chmod 0640 /opt/mothoq/compose.yaml
 printf '%s' '${deploy_script_base64}' | base64 --decode > /usr/local/bin/mothoq-deploy
 chmod 0750 /usr/local/bin/mothoq-deploy
 
-cat > /etc/systemd/system/mothoq-scheduler.service <<'UNIT'
-[Unit]
-Description=Run the Mothoq Laravel scheduler
-ConditionPathExists=/opt/mothoq/.env.production
-After=docker.service
-Requires=docker.service
-
-[Service]
-Type=oneshot
-WorkingDirectory=/opt/mothoq
-ExecStart=/usr/bin/docker compose --env-file .env.production exec -T app php artisan schedule:run
-UNIT
-
-cat > /etc/systemd/system/mothoq-scheduler.timer <<'UNIT'
-[Unit]
-Description=Run the Mothoq Laravel scheduler every minute
-
-[Timer]
-OnCalendar=*-*-* *:*:00
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-UNIT
-
-systemctl daemon-reload
-systemctl enable --now mothoq-scheduler.timer
-
 cat > /etc/update-motd.d/50-mothoq <<'MESSAGE'
 #!/usr/bin/env bash
 Mothoq host is managed by Terraform.
