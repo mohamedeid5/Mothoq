@@ -1,0 +1,7 @@
+aws_region       = "eu-north-1"
+instance_type    = "t3.micro"
+root_volume_size = 20
+terraform_operator_user = "mohamed"
+
+# Reuse an already allocated address so it is not left idle and billable.
+# existing_eip_allocation_id = "eipalloc-0123456789abcdef0"

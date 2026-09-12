@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+dnf update -y
+dnf install -y docker
+systemctl enable --now docker
+
+install -d -m 0755 /usr/local/lib/docker/cli-plugins
+curl --fail --location --silent --show-error \
+  "https://github.com/docker/compose/releases/download/${compose_version}/docker-compose-linux-x86_64" \
+  --output /usr/local/lib/docker/cli-plugins/docker-compose
+chmod 0755 /usr/local/lib/docker/cli-plugins/docker-compose
+
+if ! swapon --show | grep -q /swapfile; then
+  dd if=/dev/zero of=/swapfile bs=1M count=2048 status=none
+  chmod 0600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  printf '/swapfile none swap sw 0 0\n' >> /etc/fstab
+fi
+
+install -d -m 0750 /opt/mothoq
+printf '%s' '${compose_file_base64}' | base64 --decode > /opt/mothoq/compose.yaml
+chmod 0640 /opt/mothoq/compose.yaml
+
+printf '%s' '${deploy_script_base64}' | base64 --decode > /usr/local/bin/mothoq-deploy
+chmod 0750 /usr/local/bin/mothoq-deploy
+
+cat > /etc/systemd/system/mothoq-scheduler.service <<'UNIT'
+[Unit]
+Description=Run the Mothoq Laravel scheduler
+ConditionPathExists=/opt/mothoq/.env.production
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/mothoq
+ExecStart=/usr/bin/docker compose --env-file .env.production exec -T app php artisan schedule:run
+UNIT
+
+cat > /etc/systemd/system/mothoq-scheduler.timer <<'UNIT'
+[Unit]
+Description=Run the Mothoq Laravel scheduler every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now mothoq-scheduler.timer
+
+cat > /etc/motd.d/50-mothoq <<'MESSAGE'
+Mothoq host is managed by Terraform.
+Deploy after pushing images and creating the production SSM parameter:
+  sudo mothoq-deploy
+MESSAGE

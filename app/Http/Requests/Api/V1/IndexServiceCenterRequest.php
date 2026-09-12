@@ -17,7 +17,7 @@ class IndexServiceCenterRequest extends FormRequest
         return true;
     }
 
-    public function filters(): PublicServiceCenterFilters
+    public function toFilters(): PublicServiceCenterFilters
     {
         $validated = $this->validated();
 

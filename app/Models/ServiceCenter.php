@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\ServiceCenterStatus;
-use Database\Factories\ServiceCenterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;

@@ -16,7 +16,7 @@ class ServiceCenterController extends Controller
     public function index(IndexServiceCenterRequest $request): AnonymousResourceCollection
     {
         $serviceCenters = $this->serviceCenters
-            ->paginate($request->filters())
+            ->paginate($request->toFilters())
             ->withQueryString();
 
         return ServiceCenterSummaryResource::collection($serviceCenters);

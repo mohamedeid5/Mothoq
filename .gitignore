@@ -21,6 +21,11 @@
 /storage/*.key
 /storage/pail
 /vendor
+infra/terraform/.terraform/
+infra/terraform/*.tfplan
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/terraform.tfvars
 _ide_helper.php
 Homestead.json
 Homestead.yaml

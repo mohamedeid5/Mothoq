@@ -4,6 +4,11 @@
 !.env.example
 .phpunit.cache
 .phpunit.result.cache
+infra/terraform/.terraform
+infra/terraform/*.tfplan
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+bootstrap/cache/*.php
 node_modules
 public/build
 public/hot
