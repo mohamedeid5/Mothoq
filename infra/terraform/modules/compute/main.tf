@@ -1,5 +1,5 @@
-data "aws_ssm_parameter" "amazon_linux_2023" {
-  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+data "aws_ssm_parameter" "ubuntu_2404" {
+  name = "/aws/service/canonical/ubuntu/server/noble/stable/current/amd64/hvm/ebs-gp3/ami-id"
 }
 
 data "aws_eip" "existing" {
@@ -8,7 +8,7 @@ data "aws_eip" "existing" {
 }
 
 resource "aws_instance" "app" {
-  ami                         = data.aws_ssm_parameter.amazon_linux_2023.value
+  ami                         = data.aws_ssm_parameter.ubuntu_2404.value
   instance_type               = var.instance_type
   subnet_id                   = var.subnet_id
   vpc_security_group_ids      = [var.security_group_id]
@@ -49,7 +49,7 @@ resource "aws_instance" "app" {
 
     precondition {
       condition     = !startswith(var.instance_type, "t4g.")
-      error_message = "This first deployment uses an x86_64 AMI. Choose t3 or an x86_64 Flex instance."
+      error_message = "The Ubuntu AMI uses x86_64. Choose t3 or an x86_64 Flex instance."
     }
   }
 

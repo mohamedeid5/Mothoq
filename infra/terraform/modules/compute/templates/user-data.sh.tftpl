@@ -1,9 +1,29 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-dnf update -y
-dnf install -y docker
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get update
+apt-get install -y --no-install-recommends \
+  ca-certificates \
+  curl \
+  docker.io \
+  unzip
+rm -rf /var/lib/apt/lists/*
+
+temporary_aws_cli="$(mktemp -d)"
+trap 'rm -rf "$temporary_aws_cli"' EXIT
+curl --fail --location --silent --show-error \
+  'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' \
+  --output "$temporary_aws_cli/awscliv2.zip"
+unzip -q "$temporary_aws_cli/awscliv2.zip" -d "$temporary_aws_cli"
+"$temporary_aws_cli/aws/install" --update
+rm -rf "$temporary_aws_cli"
+trap - EXIT
+
 systemctl enable --now docker
+systemctl enable --now snap.amazon-ssm-agent.amazon-ssm-agent.service \
+  || systemctl enable --now amazon-ssm-agent.service
 
 install -d -m 0755 /usr/local/lib/docker/cli-plugins
 curl --fail --location --silent --show-error \
@@ -54,8 +74,10 @@ UNIT
 systemctl daemon-reload
 systemctl enable --now mothoq-scheduler.timer
 
-cat > /etc/motd.d/50-mothoq <<'MESSAGE'
+cat > /etc/update-motd.d/50-mothoq <<'MESSAGE'
+#!/usr/bin/env bash
 Mothoq host is managed by Terraform.
 Deploy after pushing images and creating the production SSM parameter:
   sudo mothoq-deploy
 MESSAGE
+chmod 0755 /etc/update-motd.d/50-mothoq
