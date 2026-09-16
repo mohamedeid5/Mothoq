@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Api\V1\Auth\CurrentUserController;
+use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
 use App\Http\Controllers\Api\V1\CarBrandController;
 use App\Http\Controllers\Api\V1\GovernorateCityController;
 use App\Http\Controllers\Api\V1\GovernorateController;
@@ -8,6 +11,21 @@ use App\Http\Controllers\Api\V1\ServiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
+    Route::prefix('auth')->name('auth.')->group(function (): void {
+        Route::post('register', RegisteredUserController::class)
+            ->middleware('throttle:6,1')
+            ->name('register');
+        Route::post('login', [AuthenticatedSessionController::class, 'store'])
+            ->middleware('throttle:login')
+            ->name('login');
+
+        Route::middleware('auth:sanctum')->group(function (): void {
+            Route::get('me', CurrentUserController::class)->name('me');
+            Route::delete('logout', [AuthenticatedSessionController::class, 'destroy'])
+                ->name('logout');
+        });
+    });
+
     Route::get('governorates', [GovernorateController::class, 'index'])
         ->name('governorates.index');
     Route::get('governorates/{governorate}/cities', [GovernorateCityController::class, 'index'])
