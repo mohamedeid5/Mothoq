@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\ServiceCenterController as AdminServiceCenterController;
 use App\Http\Controllers\Api\V1\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Api\V1\Auth\CurrentUserController;
 use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
 use App\Http\Controllers\Api\V1\CarBrandController;
 use App\Http\Controllers\Api\V1\GovernorateCityController;
 use App\Http\Controllers\Api\V1\GovernorateController;
+use App\Http\Controllers\Api\V1\Owner\ServiceCenterController as OwnerServiceCenterController;
 use App\Http\Controllers\Api\V1\ServiceCenterController;
 use App\Http\Controllers\Api\V1\ServiceController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +27,28 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 ->name('logout');
         });
     });
+
+    Route::middleware(['auth:sanctum', 'role:admin'])
+        ->prefix('admin')
+        ->name('admin.')
+        ->group(function (): void {
+            Route::post('service-centers', [AdminServiceCenterController::class, 'store'])
+                ->name('service-centers.store');
+        });
+
+    Route::middleware(['auth:sanctum', 'role:center_owner'])
+        ->prefix('owner')
+        ->name('owner.')
+        ->group(function (): void {
+            Route::get('service-centers', [OwnerServiceCenterController::class, 'index'])
+                ->name('service-centers.index');
+            Route::get('service-centers/{serviceCenter}', [OwnerServiceCenterController::class, 'show'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.show');
+            Route::patch('service-centers/{serviceCenter}', [OwnerServiceCenterController::class, 'update'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.update');
+        });
 
     Route::get('governorates', [GovernorateController::class, 'index'])
         ->name('governorates.index');
