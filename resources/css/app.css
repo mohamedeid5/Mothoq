@@ -2,8 +2,57 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../js/**/*.vue';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Noto Kufi Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
+    --color-brand-50: #eefbf7;
+    --color-brand-100: #d7f5eb;
+    --color-brand-200: #b2ead9;
+    --color-brand-300: #7dd8bf;
+    --color-brand-400: #45bea1;
+    --color-brand-500: #249f84;
+    --color-brand-600: #16806b;
+    --color-brand-700: #156756;
+    --color-brand-800: #155246;
+    --color-brand-900: #13443b;
+    --color-ink-950: #0a2026;
+    --color-sand-50: #f7f8f6;
+    --color-gold-400: #e8b44b;
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        min-width: 320px;
+        background: #f7f8f6;
+        color: #17343b;
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    button,
+    a,
+    input,
+    select {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    ::selection {
+        background: #b2ead9;
+        color: #0a2026;
+    }
+}
+
+@layer utilities {
+    .text-balance {
+        text-wrap: balance;
+    }
+
+    .surface-shadow {
+        box-shadow: 0 20px 55px -32px rgb(10 32 38 / 0.32);
+    }
 }
