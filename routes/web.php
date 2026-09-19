@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Web\Admin\DashboardController;
+use App\Http\Controllers\Web\Admin\ServiceCenterController as AdminServiceCenterController;
 use App\Http\Controllers\Web\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Web\Owner\ServiceCenterController as OwnerServiceCenterController;
@@ -38,6 +39,20 @@ Route::middleware('auth')->group(function (): void {
         });
 
     Route::middleware('role:admin')
-        ->get('/admin', DashboardController::class)
-        ->name('admin.dashboard');
+        ->prefix('admin')
+        ->name('admin.')
+        ->group(function (): void {
+            Route::get('/', DashboardController::class)->name('dashboard');
+            Route::get('/service-centers', [AdminServiceCenterController::class, 'index'])
+                ->name('service-centers.index');
+            Route::get('/service-centers/{serviceCenter}', [AdminServiceCenterController::class, 'show'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.show');
+            Route::patch('/service-centers/{serviceCenter}/status', [AdminServiceCenterController::class, 'updateStatus'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.status.update');
+            Route::patch('/service-centers/{serviceCenter}/verification', [AdminServiceCenterController::class, 'updateVerification'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.verification.update');
+        });
 });
