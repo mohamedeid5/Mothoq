@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Owner;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\V1\Owner\UpdateServiceCenterRequest;
+use App\Http\Requests\Owner\UpdateServiceCenterRequest;
 use App\Http\Resources\Api\V1\OwnerServiceCenterResource;
 use App\Queries\ServiceCenters\OwnerServiceCenterQuery;
 use Illuminate\Http\Request;

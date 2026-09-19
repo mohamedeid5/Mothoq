@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Api\V1\Owner;
+namespace App\Http\Requests\Owner;
 
 use App\Data\ServiceCenters\UpdateServiceCenterData;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -30,6 +30,12 @@ class UpdateServiceCenterRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'governorate' => [
+                'sometimes',
+                'required',
+                'string',
+                Rule::exists('governorates', 'slug')->where('is_active', true),
+            ],
             'city_id' => [
                 'sometimes',
                 'required',
@@ -41,8 +47,8 @@ class UpdateServiceCenterRequest extends FormRequest
             'phone' => ['sometimes', 'required', 'string', 'max:30'],
             'whatsapp' => ['sometimes', 'nullable', 'string', 'max:30'],
             'address' => ['sometimes', 'required', 'string', 'max:500'],
-            'latitude' => [Rule::requiredIf($this->has('longitude')), 'nullable', 'numeric', 'between:-90,90'],
-            'longitude' => [Rule::requiredIf($this->has('latitude')), 'nullable', 'numeric', 'between:-180,180'],
+            'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
         ];
     }
 }

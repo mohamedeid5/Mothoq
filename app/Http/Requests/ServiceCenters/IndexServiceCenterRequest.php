@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Api\V1;
+namespace App\Http\Requests\ServiceCenters;
 
 use App\Models\City;
 use App\Queries\ServiceCenters\PublicServiceCenterFilters;
@@ -12,12 +12,7 @@ use Illuminate\Validation\Validator;
 
 class IndexServiceCenterRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    public function toFilters(): PublicServiceCenterFilters
+    public function toFilters(int $defaultPerPage = 15): PublicServiceCenterFilters
     {
         $validated = $this->validated();
 
@@ -28,8 +23,16 @@ class IndexServiceCenterRequest extends FormRequest
             carBrand: isset($validated['car_brand']) ? (string) $validated['car_brand'] : null,
             verified: array_key_exists('verified', $validated) ? $this->boolean('verified') : null,
             page: isset($validated['page']) ? (int) $validated['page'] : 1,
-            perPage: isset($validated['per_page']) ? (int) $validated['per_page'] : 15,
+            perPage: isset($validated['per_page']) ? (int) $validated['per_page'] : $defaultPerPage,
         );
+    }
+
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
     }
 
     /**
@@ -71,9 +74,7 @@ class IndexServiceCenterRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<int, callable(Validator): void>
-     */
+    /** @return array<int, callable(Validator): void> */
     public function after(): array
     {
         return [
@@ -97,9 +98,7 @@ class IndexServiceCenterRequest extends FormRequest
         ];
     }
 
-    /**
-     * @return array<string, string>
-     */
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

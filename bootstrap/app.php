@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo(fn (Request $request): string => route('login'));
+        $middleware->redirectUsersTo(fn (Request $request): string => route(
+            $request->user()->role->dashboardRouteName(),
+        ));
+
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
         ]);

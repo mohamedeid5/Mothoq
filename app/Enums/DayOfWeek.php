@@ -12,6 +12,19 @@ enum DayOfWeek: string
     case Thursday = 'thursday';
     case Friday = 'friday';
 
+    public function label(): string
+    {
+        return match ($this) {
+            self::Saturday => 'السبت',
+            self::Sunday => 'الأحد',
+            self::Monday => 'الاثنين',
+            self::Tuesday => 'الثلاثاء',
+            self::Wednesday => 'الأربعاء',
+            self::Thursday => 'الخميس',
+            self::Friday => 'الجمعة',
+        };
+    }
+
     public function sortOrder(): int
     {
         return match ($this) {

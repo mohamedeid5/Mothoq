@@ -145,6 +145,28 @@ class ServiceCenterControllerTest extends TestCase
             ->assertJsonValidationErrors(['city_id', 'longitude']);
     }
 
+    public function test_owner_can_clear_both_coordinates_together(): void
+    {
+        $owner = User::factory()->centerOwner()->create();
+        $serviceCenter = ServiceCenter::factory()->create([
+            'owner_id' => $owner->id,
+            'latitude' => 30.0444,
+            'longitude' => 31.2357,
+        ]);
+
+        $this->actingWithToken($owner)
+            ->patchJson(route('api.v1.owner.service-centers.update', $serviceCenter->id), [
+                'latitude' => null,
+                'longitude' => null,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.coordinates', null);
+
+        $serviceCenter->refresh();
+        $this->assertNull($serviceCenter->latitude);
+        $this->assertNull($serviceCenter->longitude);
+    }
+
     private function actingWithToken(User $user): static
     {
         return $this->withToken($user->createToken('Test')->plainTextToken);
