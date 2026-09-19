@@ -45,7 +45,7 @@ class ServiceCenterController extends Controller
         Gate::authorize('update', $serviceCenterModel);
 
         $updateServiceCenter->handle($serviceCenterModel, $request->toData());
-        $serviceCenterModel->load(['owner', 'city.governorate']);
+        $serviceCenterModel->load(['owner', 'city.governorate', 'services', 'carBrands']);
 
         return new OwnerServiceCenterResource($serviceCenterModel);
     }

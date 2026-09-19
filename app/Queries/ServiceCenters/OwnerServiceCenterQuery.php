@@ -23,7 +23,7 @@ final class OwnerServiceCenterQuery
     public function findForOwnerOrFail(User $owner, int $serviceCenterId): ServiceCenter
     {
         return $owner->serviceCenters()
-            ->with(['owner', 'city.governorate'])
+            ->with(['owner', 'city.governorate', 'services', 'carBrands'])
             ->findOrFail($serviceCenterId);
     }
 }

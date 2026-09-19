@@ -52,6 +52,8 @@ class ServiceCenterController extends Controller
         return view('admin.service-centers.edit', [
             'serviceCenter' => $serviceCenterModel,
             'governorates' => $catalog->governoratesWithCities(),
+            'services' => $catalog->services(),
+            'carBrands' => $catalog->carBrands(),
         ]);
     }
 

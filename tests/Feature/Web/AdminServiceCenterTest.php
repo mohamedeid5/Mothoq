@@ -3,7 +3,9 @@
 namespace Tests\Feature\Web;
 
 use App\Enums\ServiceCenterStatus;
+use App\Models\CarBrand;
 use App\Models\City;
+use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -72,12 +74,16 @@ class AdminServiceCenterTest extends TestCase
     {
         $admin = User::factory()->admin()->create();
         $newCity = City::factory()->create();
+        $service = Service::factory()->create();
+        $carBrand = CarBrand::factory()->create();
         $serviceCenter = ServiceCenter::factory()->create();
 
         $this->actingAs($admin)
             ->get(route('admin.service-centers.edit', $serviceCenter))
             ->assertOk()
             ->assertSee($serviceCenter->name)
+            ->assertSee($service->name)
+            ->assertSee($carBrand->name)
             ->assertSee('حفظ التعديلات');
 
         $this->actingAs($admin)
@@ -88,6 +94,10 @@ class AdminServiceCenterTest extends TestCase
                 'address' => 'العنوان الجديد',
                 'latitude' => null,
                 'longitude' => null,
+                'sync_services' => '1',
+                'service_ids' => [$service->id],
+                'sync_car_brands' => '1',
+                'car_brand_ids' => [$carBrand->id],
             ])
             ->assertRedirect(route('admin.service-centers.edit', $serviceCenter))
             ->assertSessionHas('success', 'تم حفظ بيانات المركز بنجاح.');
@@ -98,6 +108,14 @@ class AdminServiceCenterTest extends TestCase
             'name' => 'المركز بعد تعديل الأدمن',
             'phone' => '01000000000',
             'address' => 'العنوان الجديد',
+        ]);
+        $this->assertDatabaseHas('service_service_center', [
+            'service_center_id' => $serviceCenter->id,
+            'service_id' => $service->id,
+        ]);
+        $this->assertDatabaseHas('car_brand_service_center', [
+            'service_center_id' => $serviceCenter->id,
+            'car_brand_id' => $carBrand->id,
         ]);
     }
 

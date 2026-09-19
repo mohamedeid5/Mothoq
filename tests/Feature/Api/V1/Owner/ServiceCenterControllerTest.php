@@ -3,7 +3,9 @@
 namespace Tests\Feature\Api\V1\Owner;
 
 use App\Enums\ServiceCenterStatus;
+use App\Models\CarBrand;
 use App\Models\City;
+use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -91,6 +93,8 @@ class ServiceCenterControllerTest extends TestCase
         $owner = User::factory()->centerOwner()->create();
         $otherOwner = User::factory()->centerOwner()->create();
         $newCity = City::factory()->create();
+        $service = Service::factory()->create();
+        $carBrand = CarBrand::factory()->create();
         $serviceCenter = ServiceCenter::factory()->published()->verified()->create([
             'owner_id' => $owner->id,
             'slug' => 'stable-public-url',
@@ -108,6 +112,8 @@ class ServiceCenterControllerTest extends TestCase
                 'address' => 'Updated address',
                 'latitude' => 29.9712,
                 'longitude' => 31.1253,
+                'service_ids' => [$service->id],
+                'car_brand_ids' => [$carBrand->id],
                 'owner_id' => $otherOwner->id,
                 'slug' => 'changed-slug',
                 'status' => ServiceCenterStatus::Suspended->value,
@@ -119,6 +125,8 @@ class ServiceCenterControllerTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.name', 'Updated Center Name')
             ->assertJsonPath('data.city.id', $newCity->id)
+            ->assertJsonPath('data.services.0.id', $service->id)
+            ->assertJsonPath('data.car_brands.0.id', $carBrand->id)
             ->assertJsonPath('data.slug', 'stable-public-url')
             ->assertJsonPath('data.status', 'published')
             ->assertJsonPath('data.is_verified', true);
@@ -128,6 +136,14 @@ class ServiceCenterControllerTest extends TestCase
         $this->assertSame('stable-public-url', $serviceCenter->slug);
         $this->assertSame(ServiceCenterStatus::Published, $serviceCenter->status);
         $this->assertTrue($verifiedAt->equalTo($serviceCenter->verified_at));
+        $this->assertDatabaseHas('service_service_center', [
+            'service_center_id' => $serviceCenter->id,
+            'service_id' => $service->id,
+        ]);
+        $this->assertDatabaseHas('car_brand_service_center', [
+            'service_center_id' => $serviceCenter->id,
+            'car_brand_id' => $carBrand->id,
+        ]);
     }
 
     public function test_update_validates_active_city_and_coordinate_pair(): void
@@ -153,6 +169,10 @@ class ServiceCenterControllerTest extends TestCase
             'latitude' => 30.0444,
             'longitude' => 31.2357,
         ]);
+        $service = Service::factory()->create();
+        $carBrand = CarBrand::factory()->create();
+        $serviceCenter->services()->attach($service);
+        $serviceCenter->carBrands()->attach($carBrand);
 
         $this->actingWithToken($owner)
             ->patchJson(route('api.v1.owner.service-centers.update', $serviceCenter->id), [
@@ -165,6 +185,36 @@ class ServiceCenterControllerTest extends TestCase
         $serviceCenter->refresh();
         $this->assertNull($serviceCenter->latitude);
         $this->assertNull($serviceCenter->longitude);
+        $this->assertDatabaseHas('service_service_center', [
+            'service_center_id' => $serviceCenter->id,
+            'service_id' => $service->id,
+        ]);
+        $this->assertDatabaseHas('car_brand_service_center', [
+            'service_center_id' => $serviceCenter->id,
+            'car_brand_id' => $carBrand->id,
+        ]);
+    }
+
+    public function test_owner_can_clear_services_and_car_brands(): void
+    {
+        $owner = User::factory()->centerOwner()->create();
+        $serviceCenter = ServiceCenter::factory()->create(['owner_id' => $owner->id]);
+        $serviceCenter->services()->attach(Service::factory()->create());
+        $serviceCenter->carBrands()->attach(CarBrand::factory()->create());
+
+        $this->actingWithToken($owner)
+            ->patchJson(route('api.v1.owner.service-centers.update', $serviceCenter), [
+                'service_ids' => [],
+                'car_brand_ids' => [],
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseMissing('service_service_center', [
+            'service_center_id' => $serviceCenter->id,
+        ]);
+        $this->assertDatabaseMissing('car_brand_service_center', [
+            'service_center_id' => $serviceCenter->id,
+        ]);
     }
 
     private function actingWithToken(User $user): static

@@ -74,6 +74,11 @@
                         <input name="longitude" value="{{ old('longitude', $serviceCenter->longitude) }}" type="number" step="any" class="h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 outline-none focus:border-brand-500">
                         @error('longitude')<span class="text-xs text-red-600">{{ $message }}</span>@enderror
                     </label>
+                    @include('service-centers._catalog-fields', [
+                        'serviceCenter' => $serviceCenter,
+                        'services' => $services,
+                        'carBrands' => $carBrands,
+                    ])
                 </div>
 
                 <div class="mt-7 flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end"><a href="{{ route('admin.service-centers.show', $serviceCenter) }}" class="rounded-2xl border border-slate-200 px-6 py-3 text-center text-sm font-black text-slate-600 hover:bg-slate-50">إلغاء</a><button type="submit" class="rounded-2xl bg-brand-600 px-7 py-3 text-sm font-black text-white hover:bg-brand-500">حفظ التعديلات</button></div>

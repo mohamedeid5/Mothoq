@@ -76,12 +76,17 @@
                             <input name="longitude" value="{{ old('longitude', $serviceCenter->longitude) }}" type="number" step="any" class="h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-100">
                             @error('longitude')<span class="text-xs text-red-600">{{ $message }}</span>@enderror
                         </label>
+                        @include('service-centers._catalog-fields', [
+                            'serviceCenter' => $serviceCenter,
+                            'services' => $services,
+                            'carBrands' => $carBrands,
+                        ])
                     </div>
 
                     <div class="mt-7 flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:justify-end"><a href="{{ route('owner.dashboard') }}" class="rounded-2xl border border-slate-200 px-6 py-3 text-center text-sm font-black text-slate-600 hover:bg-slate-50">إلغاء</a><button type="submit" class="rounded-2xl bg-brand-600 px-7 py-3 text-sm font-black text-white hover:bg-brand-500">حفظ التعديلات</button></div>
                 </form>
 
-                <aside class="order-first h-fit rounded-3xl border border-slate-200 bg-white p-5 lg:order-last lg:sticky lg:top-24"><p class="text-xs font-black text-brand-700">قبل الحفظ</p><h2 class="mt-1 text-lg font-black text-ink-950">راجع البيانات بعناية</h2><ul class="mt-4 grid gap-3 text-sm leading-6 text-slate-600"><li>✓ الاسم والعنوان يظهران في نتائج البحث.</li><li>✓ الهاتف وواتساب متاحان للعملاء مباشرة.</li><li>✓ حالة النشر والتوثيق لا يمكن تغييرهما من هنا.</li></ul></aside>
+                <aside class="order-first h-fit rounded-3xl border border-slate-200 bg-white p-5 lg:order-last lg:sticky lg:top-24"><p class="text-xs font-black text-brand-700">قبل الحفظ</p><h2 class="mt-1 text-lg font-black text-ink-950">راجع البيانات بعناية</h2><ul class="mt-4 grid gap-3 text-sm leading-6 text-slate-600"><li>✓ الاسم والعنوان يظهران في نتائج البحث.</li><li>✓ الخدمات والماركات تحدد ظهور المركز في نتائج الفلترة.</li><li>✓ حالة النشر والتوثيق لا يمكن تغييرهما من هنا.</li></ul></aside>
             </div>
         </div>
     </section>

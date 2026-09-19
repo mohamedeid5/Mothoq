@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Web;
 
+use App\Models\CarBrand;
+use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -51,6 +53,8 @@ class OwnerServiceCenterTest extends TestCase
     {
         $owner = User::factory()->centerOwner()->create();
         $serviceCenter = ServiceCenter::factory()->create(['owner_id' => $owner->id]);
+        $service = Service::factory()->create();
+        $carBrand = CarBrand::factory()->create();
 
         $this->actingAs($owner)
             ->patch(route('owner.service-centers.update', $serviceCenter), [
@@ -60,6 +64,10 @@ class OwnerServiceCenterTest extends TestCase
                 'address' => $serviceCenter->address,
                 'latitude' => null,
                 'longitude' => null,
+                'sync_services' => '1',
+                'service_ids' => [$service->id],
+                'sync_car_brands' => '1',
+                'car_brand_ids' => [$carBrand->id],
             ])
             ->assertRedirect(route('owner.service-centers.edit', $serviceCenter))
             ->assertSessionHas('success', 'تم حفظ بيانات المركز بنجاح.');
@@ -67,6 +75,36 @@ class OwnerServiceCenterTest extends TestCase
         $this->assertDatabaseHas('service_centers', [
             'id' => $serviceCenter->id,
             'name' => 'الاسم الجديد للمركز',
+        ]);
+        $this->assertDatabaseHas('service_service_center', [
+            'service_center_id' => $serviceCenter->id,
+            'service_id' => $service->id,
+        ]);
+        $this->assertDatabaseHas('car_brand_service_center', [
+            'service_center_id' => $serviceCenter->id,
+            'car_brand_id' => $carBrand->id,
+        ]);
+    }
+
+    public function test_owner_can_clear_all_services_and_car_brands_from_the_web_form(): void
+    {
+        $owner = User::factory()->centerOwner()->create();
+        $serviceCenter = ServiceCenter::factory()->create(['owner_id' => $owner->id]);
+        $serviceCenter->services()->attach(Service::factory()->create());
+        $serviceCenter->carBrands()->attach(CarBrand::factory()->create());
+
+        $this->actingAs($owner)
+            ->patch(route('owner.service-centers.update', $serviceCenter), [
+                'sync_services' => '1',
+                'sync_car_brands' => '1',
+            ])
+            ->assertRedirect(route('owner.service-centers.edit', $serviceCenter));
+
+        $this->assertDatabaseMissing('service_service_center', [
+            'service_center_id' => $serviceCenter->id,
+        ]);
+        $this->assertDatabaseMissing('car_brand_service_center', [
+            'service_center_id' => $serviceCenter->id,
         ]);
     }
 }

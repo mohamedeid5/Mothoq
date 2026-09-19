@@ -6,7 +6,7 @@ use Illuminate\Support\Arr;
 
 final readonly class UpdateServiceCenterData
 {
-    private const FIELDS = [
+    private const ATTRIBUTE_FIELDS = [
         'city_id',
         'name',
         'description',
@@ -31,11 +31,19 @@ final readonly class UpdateServiceCenterData
             address: array_key_exists('address', $attributes) ? (string) $attributes['address'] : null,
             latitude: isset($attributes['latitude']) ? (float) $attributes['latitude'] : null,
             longitude: isset($attributes['longitude']) ? (float) $attributes['longitude'] : null,
-            providedFields: array_values(array_intersect(array_keys($attributes), self::FIELDS)),
+            serviceIds: array_key_exists('service_ids', $attributes)
+                ? array_map(intval(...), $attributes['service_ids'])
+                : null,
+            carBrandIds: array_key_exists('car_brand_ids', $attributes)
+                ? array_map(intval(...), $attributes['car_brand_ids'])
+                : null,
+            providedFields: array_values(array_intersect(array_keys($attributes), self::ATTRIBUTE_FIELDS)),
         );
     }
 
     /**
+     * @param  list<int>|null  $serviceIds
+     * @param  list<int>|null  $carBrandIds
      * @param  list<string>  $providedFields
      */
     public function __construct(
@@ -47,6 +55,8 @@ final readonly class UpdateServiceCenterData
         public ?string $address,
         public ?float $latitude,
         public ?float $longitude,
+        public ?array $serviceIds,
+        public ?array $carBrandIds,
         private array $providedFields,
     ) {}
 

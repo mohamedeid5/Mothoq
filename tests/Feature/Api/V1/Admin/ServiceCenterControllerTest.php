@@ -125,6 +125,8 @@ class ServiceCenterControllerTest extends TestCase
         $admin = User::factory()->admin()->create();
         $otherOwner = User::factory()->centerOwner()->create();
         $newCity = City::factory()->create();
+        $service = Service::factory()->create();
+        $carBrand = CarBrand::factory()->create();
         $serviceCenter = ServiceCenter::factory()->verified()->create([
             'slug' => 'stable-admin-url',
         ]);
@@ -141,6 +143,8 @@ class ServiceCenterControllerTest extends TestCase
                 'address' => 'Updated by admin',
                 'latitude' => 30.0444,
                 'longitude' => 31.2357,
+                'service_ids' => [$service->id],
+                'car_brand_ids' => [$carBrand->id],
                 'owner_id' => $otherOwner->id,
                 'slug' => 'attacker-slug',
                 'status' => ServiceCenterStatus::Suspended->value,
@@ -149,6 +153,8 @@ class ServiceCenterControllerTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.name', 'Admin Updated Center')
             ->assertJsonPath('data.city.id', $newCity->id)
+            ->assertJsonPath('data.services.0.id', $service->id)
+            ->assertJsonPath('data.car_brands.0.id', $carBrand->id)
             ->assertJsonPath('data.slug', 'stable-admin-url')
             ->assertJsonPath('data.status', ServiceCenterStatus::Published->value)
             ->assertJsonPath('data.is_verified', true);
@@ -158,21 +164,38 @@ class ServiceCenterControllerTest extends TestCase
         $this->assertSame('stable-admin-url', $serviceCenter->slug);
         $this->assertSame(ServiceCenterStatus::Published, $serviceCenter->status);
         $this->assertTrue($verifiedAt->equalTo($serviceCenter->verified_at));
+        $this->assertDatabaseHas('service_service_center', [
+            'service_center_id' => $serviceCenter->id,
+            'service_id' => $service->id,
+        ]);
+        $this->assertDatabaseHas('car_brand_service_center', [
+            'service_center_id' => $serviceCenter->id,
+            'car_brand_id' => $carBrand->id,
+        ]);
     }
 
     public function test_admin_service_center_update_validates_active_city_and_coordinates(): void
     {
         $admin = User::factory()->admin()->create();
         $inactiveCity = City::factory()->create(['is_active' => false]);
+        $inactiveService = Service::factory()->create(['is_active' => false]);
+        $inactiveCarBrand = CarBrand::factory()->create(['is_active' => false]);
         $serviceCenter = ServiceCenter::factory()->create();
 
         $this->actingWithToken($admin)
             ->patchJson(route('api.v1.admin.service-centers.update', $serviceCenter), [
                 'city_id' => $inactiveCity->id,
                 'latitude' => 30.0444,
+                'service_ids' => [$inactiveService->id],
+                'car_brand_ids' => [$inactiveCarBrand->id],
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['city_id', 'longitude']);
+            ->assertJsonValidationErrors([
+                'city_id',
+                'longitude',
+                'service_ids.0',
+                'car_brand_ids.0',
+            ]);
     }
 
     public function test_admin_updates_service_center_verification(): void

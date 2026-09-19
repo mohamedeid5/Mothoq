@@ -18,8 +18,6 @@ class AdminServiceCenterResource extends OwnerServiceCenterResource
     {
         return [
             ...parent::toArray($request),
-            'services' => ServiceResource::collection($this->whenLoaded('services')),
-            'car_brands' => CarBrandResource::collection($this->whenLoaded('carBrands')),
             'images' => $this->whenLoaded(
                 'images',
                 fn () => $this->images->map(fn (CenterImage $image): array => [
