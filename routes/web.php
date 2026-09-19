@@ -48,6 +48,12 @@ Route::middleware('auth')->group(function (): void {
             Route::get('/service-centers/{serviceCenter}', [AdminServiceCenterController::class, 'show'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.show');
+            Route::get('/service-centers/{serviceCenter}/edit', [AdminServiceCenterController::class, 'edit'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.edit');
+            Route::patch('/service-centers/{serviceCenter}', [AdminServiceCenterController::class, 'update'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.update');
             Route::patch('/service-centers/{serviceCenter}/status', [AdminServiceCenterController::class, 'updateStatus'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.status.update');

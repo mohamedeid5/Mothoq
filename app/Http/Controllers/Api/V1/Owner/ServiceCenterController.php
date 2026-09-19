@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Api\V1\Owner;
 
+use App\Actions\ServiceCenters\UpdateServiceCenterAction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Owner\UpdateServiceCenterRequest;
+use App\Http\Requests\ServiceCenters\UpdateServiceCenterRequest;
 use App\Http\Resources\Api\V1\OwnerServiceCenterResource;
 use App\Queries\ServiceCenters\OwnerServiceCenterQuery;
 use Illuminate\Http\Request;
@@ -35,6 +36,7 @@ class ServiceCenterController extends Controller
     public function update(
         UpdateServiceCenterRequest $request,
         int $serviceCenter,
+        UpdateServiceCenterAction $updateServiceCenter,
     ): OwnerServiceCenterResource {
         $serviceCenterModel = $this->serviceCenters->findForOwnerOrFail(
             $request->user(),
@@ -42,7 +44,7 @@ class ServiceCenterController extends Controller
         );
         Gate::authorize('update', $serviceCenterModel);
 
-        $serviceCenterModel->update($request->toData()->toArray());
+        $updateServiceCenter->handle($serviceCenterModel, $request->toData());
         $serviceCenterModel->load(['owner', 'city.governorate']);
 
         return new OwnerServiceCenterResource($serviceCenterModel);

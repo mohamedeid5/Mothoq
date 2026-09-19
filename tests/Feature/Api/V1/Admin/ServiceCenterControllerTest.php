@@ -4,7 +4,10 @@ namespace Tests\Feature\Api\V1\Admin;
 
 use App\Enums\ServiceCenterStatus;
 use App\Enums\UserRole;
+use App\Models\CarBrand;
+use App\Models\CenterImage;
 use App\Models\City;
+use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -13,6 +16,220 @@ use Tests\TestCase;
 class ServiceCenterControllerTest extends TestCase
 {
     use LazilyRefreshDatabase;
+
+    public function test_guest_cannot_manage_service_centers(): void
+    {
+        $serviceCenter = ServiceCenter::factory()->create();
+
+        $this->getJson(route('api.v1.admin.service-centers.index'))
+            ->assertUnauthorized();
+        $this->getJson(route('api.v1.admin.service-centers.show', $serviceCenter))
+            ->assertUnauthorized();
+        $this->patchJson(route('api.v1.admin.service-centers.status.update', $serviceCenter), [
+            'status' => ServiceCenterStatus::Published->value,
+        ])->assertUnauthorized();
+        $this->patchJson(route('api.v1.admin.service-centers.verification.update', $serviceCenter), [
+            'verified' => true,
+        ])->assertUnauthorized();
+    }
+
+    public function test_non_admin_cannot_manage_service_centers(): void
+    {
+        $serviceCenter = ServiceCenter::factory()->create();
+
+        foreach ([User::factory()->create(), User::factory()->centerOwner()->create()] as $user) {
+            $this->actingWithToken($user)
+                ->getJson(route('api.v1.admin.service-centers.index'))
+                ->assertForbidden();
+
+            $this->app['auth']->forgetGuards();
+        }
+    }
+
+    public function test_admin_lists_and_filters_service_centers(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $matchingCenter = ServiceCenter::factory()->verified()->create([
+            'name' => 'Cairo Trusted Center',
+        ]);
+        ServiceCenter::factory()->published()->create([
+            'name' => 'Alex Center',
+        ]);
+        ServiceCenter::factory()->create([
+            'name' => 'Cairo Draft Center',
+        ]);
+
+        $this->actingWithToken($admin)
+            ->getJson(route('api.v1.admin.service-centers.index', [
+                'search' => 'Cairo Trusted',
+                'status' => ServiceCenterStatus::Published->value,
+                'verified' => true,
+            ]))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $matchingCenter->id)
+            ->assertJsonPath('data.0.status', ServiceCenterStatus::Published->value)
+            ->assertJsonPath('data.0.is_verified', true)
+            ->assertJsonStructure(['data', 'links', 'meta']);
+    }
+
+    public function test_admin_views_service_center_details(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $serviceCenter = ServiceCenter::factory()->create();
+        $service = Service::factory()->create();
+        $carBrand = CarBrand::factory()->create();
+        $image = CenterImage::factory()->for($serviceCenter)->create();
+        $serviceCenter->services()->attach($service);
+        $serviceCenter->carBrands()->attach($carBrand);
+
+        $this->actingWithToken($admin)
+            ->getJson(route('api.v1.admin.service-centers.show', $serviceCenter))
+            ->assertOk()
+            ->assertJsonPath('data.id', $serviceCenter->id)
+            ->assertJsonPath('data.services.0.id', $service->id)
+            ->assertJsonPath('data.car_brands.0.id', $carBrand->id)
+            ->assertJsonPath('data.images.0.id', $image->id)
+            ->assertJsonStructure([
+                'data' => [
+                    'owner',
+                    'city',
+                    'services',
+                    'car_brands',
+                    'images',
+                    'published_reviews_count',
+                    'published_reviews_average',
+                    'created_at',
+                    'updated_at',
+                ],
+            ]);
+    }
+
+    public function test_admin_updates_service_center_status(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $serviceCenter = ServiceCenter::factory()->create();
+
+        $this->actingWithToken($admin)
+            ->patchJson(route('api.v1.admin.service-centers.status.update', $serviceCenter), [
+                'status' => ServiceCenterStatus::Published->value,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', ServiceCenterStatus::Published->value);
+
+        $this->assertSame(ServiceCenterStatus::Published, $serviceCenter->fresh()->status);
+    }
+
+    public function test_admin_updates_service_center_data_without_changing_separately_managed_fields(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $otherOwner = User::factory()->centerOwner()->create();
+        $newCity = City::factory()->create();
+        $serviceCenter = ServiceCenter::factory()->verified()->create([
+            'slug' => 'stable-admin-url',
+        ]);
+        $originalOwnerId = $serviceCenter->owner_id;
+        $verifiedAt = $serviceCenter->verified_at;
+
+        $this->actingWithToken($admin)
+            ->patchJson(route('api.v1.admin.service-centers.update', $serviceCenter), [
+                'city_id' => $newCity->id,
+                'name' => 'Admin Updated Center',
+                'description' => null,
+                'phone' => '01111111111',
+                'whatsapp' => null,
+                'address' => 'Updated by admin',
+                'latitude' => 30.0444,
+                'longitude' => 31.2357,
+                'owner_id' => $otherOwner->id,
+                'slug' => 'attacker-slug',
+                'status' => ServiceCenterStatus::Suspended->value,
+                'verified_at' => null,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Admin Updated Center')
+            ->assertJsonPath('data.city.id', $newCity->id)
+            ->assertJsonPath('data.slug', 'stable-admin-url')
+            ->assertJsonPath('data.status', ServiceCenterStatus::Published->value)
+            ->assertJsonPath('data.is_verified', true);
+
+        $serviceCenter->refresh();
+        $this->assertSame($originalOwnerId, $serviceCenter->owner_id);
+        $this->assertSame('stable-admin-url', $serviceCenter->slug);
+        $this->assertSame(ServiceCenterStatus::Published, $serviceCenter->status);
+        $this->assertTrue($verifiedAt->equalTo($serviceCenter->verified_at));
+    }
+
+    public function test_admin_service_center_update_validates_active_city_and_coordinates(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $inactiveCity = City::factory()->create(['is_active' => false]);
+        $serviceCenter = ServiceCenter::factory()->create();
+
+        $this->actingWithToken($admin)
+            ->patchJson(route('api.v1.admin.service-centers.update', $serviceCenter), [
+                'city_id' => $inactiveCity->id,
+                'latitude' => 30.0444,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['city_id', 'longitude']);
+    }
+
+    public function test_admin_updates_service_center_verification(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $serviceCenter = ServiceCenter::factory()->create();
+
+        $this->actingWithToken($admin)
+            ->patchJson(route('api.v1.admin.service-centers.verification.update', $serviceCenter), [
+                'verified' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.is_verified', true);
+
+        $this->assertNotNull($serviceCenter->fresh()->verified_at);
+
+        $this->actingWithToken($admin)
+            ->patchJson(route('api.v1.admin.service-centers.verification.update', $serviceCenter), [
+                'verified' => false,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.is_verified', false);
+
+        $this->assertNull($serviceCenter->fresh()->verified_at);
+    }
+
+    public function test_admin_management_inputs_are_validated(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $serviceCenter = ServiceCenter::factory()->create();
+
+        $this->actingWithToken($admin)
+            ->getJson(route('api.v1.admin.service-centers.index', [
+                'status' => 'unknown',
+                'verified' => 'unknown',
+            ]))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['status', 'verified']);
+
+        $this->actingWithToken($admin)
+            ->patchJson(route('api.v1.admin.service-centers.status.update', $serviceCenter), [
+                'status' => 'unknown',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('status');
+
+        $this->actingWithToken($admin)
+            ->patchJson(route('api.v1.admin.service-centers.verification.update', $serviceCenter), [
+                'verified' => 'unknown',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('verified');
+
+        $serviceCenter->refresh();
+        $this->assertSame(ServiceCenterStatus::Draft, $serviceCenter->status);
+        $this->assertNull($serviceCenter->verified_at);
+    }
 
     public function test_guest_cannot_create_service_center(): void
     {

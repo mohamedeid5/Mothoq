@@ -32,8 +32,22 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         ->prefix('admin')
         ->name('admin.')
         ->group(function (): void {
+            Route::get('service-centers', [AdminServiceCenterController::class, 'index'])
+                ->name('service-centers.index');
+            Route::get('service-centers/{serviceCenter}', [AdminServiceCenterController::class, 'show'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.show');
             Route::post('service-centers', [AdminServiceCenterController::class, 'store'])
                 ->name('service-centers.store');
+            Route::patch('service-centers/{serviceCenter}', [AdminServiceCenterController::class, 'update'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.update');
+            Route::patch('service-centers/{serviceCenter}/status', [AdminServiceCenterController::class, 'updateStatus'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.status.update');
+            Route::patch('service-centers/{serviceCenter}/verification', [AdminServiceCenterController::class, 'updateVerification'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.verification.update');
         });
 
     Route::middleware(['auth:sanctum', 'role:center_owner'])

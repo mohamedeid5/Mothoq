@@ -3,6 +3,7 @@
 namespace Tests\Feature\Web;
 
 use App\Enums\ServiceCenterStatus;
+use App\Models\City;
 use App\Models\ServiceCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -65,6 +66,39 @@ class AdminServiceCenterTest extends TestCase
             ->assertOk()
             ->assertSee($serviceCenter->name)
             ->assertSee($serviceCenter->owner->email);
+    }
+
+    public function test_admin_can_open_and_update_any_service_center(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $newCity = City::factory()->create();
+        $serviceCenter = ServiceCenter::factory()->create();
+
+        $this->actingAs($admin)
+            ->get(route('admin.service-centers.edit', $serviceCenter))
+            ->assertOk()
+            ->assertSee($serviceCenter->name)
+            ->assertSee('حفظ التعديلات');
+
+        $this->actingAs($admin)
+            ->patch(route('admin.service-centers.update', $serviceCenter), [
+                'name' => 'المركز بعد تعديل الأدمن',
+                'city_id' => $newCity->id,
+                'phone' => '01000000000',
+                'address' => 'العنوان الجديد',
+                'latitude' => null,
+                'longitude' => null,
+            ])
+            ->assertRedirect(route('admin.service-centers.edit', $serviceCenter))
+            ->assertSessionHas('success', 'تم حفظ بيانات المركز بنجاح.');
+
+        $this->assertDatabaseHas('service_centers', [
+            'id' => $serviceCenter->id,
+            'city_id' => $newCity->id,
+            'name' => 'المركز بعد تعديل الأدمن',
+            'phone' => '01000000000',
+            'address' => 'العنوان الجديد',
+        ]);
     }
 
     public function test_admin_can_publish_and_suspend_a_service_center(): void

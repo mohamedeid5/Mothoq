@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Owner;
+namespace App\Http\Requests\ServiceCenters;
 
 use App\Data\ServiceCenters\UpdateServiceCenterData;
 use Illuminate\Contracts\Validation\ValidationRule;

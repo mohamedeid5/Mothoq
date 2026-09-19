@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Web\Admin;
 
 use App\Actions\ServiceCenters\SetServiceCenterStatusAction;
 use App\Actions\ServiceCenters\SetServiceCenterVerificationAction;
+use App\Actions\ServiceCenters\UpdateServiceCenterAction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Web\Admin\IndexServiceCenterRequest;
-use App\Http\Requests\Web\Admin\UpdateServiceCenterStatusRequest;
-use App\Http\Requests\Web\Admin\UpdateServiceCenterVerificationRequest;
+use App\Http\Requests\Admin\IndexServiceCenterRequest;
+use App\Http\Requests\Admin\UpdateServiceCenterStatusRequest;
+use App\Http\Requests\Admin\UpdateServiceCenterVerificationRequest;
+use App\Http\Requests\ServiceCenters\UpdateServiceCenterRequest;
 use App\Models\ServiceCenter;
+use App\Queries\Catalog\PublicCatalogQuery;
 use App\Queries\ServiceCenters\AdminServiceCenterQuery;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -39,6 +42,32 @@ class ServiceCenterController extends Controller
         return view('admin.service-centers.show', [
             'serviceCenter' => $serviceCenterModel,
         ]);
+    }
+
+    public function edit(int $serviceCenter, PublicCatalogQuery $catalog): View
+    {
+        $serviceCenterModel = $this->serviceCenters->findOrFail($serviceCenter);
+        Gate::authorize('update', $serviceCenterModel);
+
+        return view('admin.service-centers.edit', [
+            'serviceCenter' => $serviceCenterModel,
+            'governorates' => $catalog->governoratesWithCities(),
+        ]);
+    }
+
+    public function update(
+        UpdateServiceCenterRequest $request,
+        int $serviceCenter,
+        UpdateServiceCenterAction $updateServiceCenter,
+    ): RedirectResponse {
+        $serviceCenterModel = $this->serviceCenters->findOrFail($serviceCenter);
+        Gate::authorize('update', $serviceCenterModel);
+
+        $updateServiceCenter->handle($serviceCenterModel, $request->toData());
+
+        return redirect()
+            ->route('admin.service-centers.edit', $serviceCenterModel)
+            ->with('success', 'تم حفظ بيانات المركز بنجاح.');
     }
 
     public function updateStatus(

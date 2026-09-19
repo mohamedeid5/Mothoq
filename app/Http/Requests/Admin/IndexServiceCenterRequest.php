@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Web\Admin;
+namespace App\Http\Requests\Admin;
 
 use App\Enums\ServiceCenterStatus;
 use Illuminate\Contracts\Validation\ValidationRule;
