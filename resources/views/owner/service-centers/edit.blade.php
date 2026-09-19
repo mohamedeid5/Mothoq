@@ -88,6 +88,11 @@
 
                 <aside class="order-first h-fit rounded-3xl border border-slate-200 bg-white p-5 lg:order-last lg:sticky lg:top-24"><p class="text-xs font-black text-brand-700">قبل الحفظ</p><h2 class="mt-1 text-lg font-black text-ink-950">راجع البيانات بعناية</h2><ul class="mt-4 grid gap-3 text-sm leading-6 text-slate-600"><li>✓ الاسم والعنوان يظهران في نتائج البحث.</li><li>✓ الخدمات والماركات تحدد ظهور المركز في نتائج الفلترة.</li><li>✓ حالة النشر والتوثيق لا يمكن تغييرهما من هنا.</li></ul></aside>
             </div>
+
+            @include('service-centers._opening-hours-form', [
+                'serviceCenter' => $serviceCenter,
+                'action' => route('owner.service-centers.opening-hours.update', $serviceCenter),
+            ])
         </div>
     </section>
 @endsection

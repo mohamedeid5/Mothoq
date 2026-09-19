@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Models\OpeningHour;
 use App\Models\ServiceCenter;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -49,6 +50,14 @@ class OwnerServiceCenterResource extends JsonResource
             'is_verified' => $this->verified_at !== null,
             'services' => ServiceResource::collection($this->whenLoaded('services')),
             'car_brands' => CarBrandResource::collection($this->whenLoaded('carBrands')),
+            'opening_hours' => $this->whenLoaded(
+                'openingHours',
+                fn () => OpeningHourResource::collection(
+                    $this->openingHours
+                        ->sortBy(fn (OpeningHour $openingHour): int => $openingHour->day_of_week->sortOrder())
+                        ->values(),
+                ),
+            ),
         ];
     }
 }

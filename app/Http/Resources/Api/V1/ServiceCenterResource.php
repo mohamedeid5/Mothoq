@@ -27,15 +27,11 @@ class ServiceCenterResource extends ServiceCenterSummaryResource
                 'is_cover' => $image->is_cover,
                 'sort_order' => $image->sort_order,
             ])->values(),
-            'opening_hours' => $this->openingHours
-                ->sortBy(fn (OpeningHour $openingHour): int => $openingHour->day_of_week->sortOrder())
-                ->values()
-                ->map(fn (OpeningHour $openingHour): array => [
-                    'day' => $openingHour->day_of_week->value,
-                    'opens_at' => $openingHour->opens_at,
-                    'closes_at' => $openingHour->closes_at,
-                    'is_closed' => $openingHour->is_closed,
-                ]),
+            'opening_hours' => OpeningHourResource::collection(
+                $this->openingHours
+                    ->sortBy(fn (OpeningHour $openingHour): int => $openingHour->day_of_week->sortOrder())
+                    ->values(),
+            ),
             'latest_reviews' => ReviewResource::collection($this->publishedReviews),
         ];
     }

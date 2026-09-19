@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\Web\Admin\DashboardController;
+use App\Http\Controllers\Web\Admin\OpeningHourController as AdminOpeningHourController;
 use App\Http\Controllers\Web\Admin\ServiceCenterController as AdminServiceCenterController;
 use App\Http\Controllers\Web\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Web\HomeController;
+use App\Http\Controllers\Web\Owner\OpeningHourController as OwnerOpeningHourController;
 use App\Http\Controllers\Web\Owner\ServiceCenterController as OwnerServiceCenterController;
 use App\Http\Controllers\Web\ServiceCenterController;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +38,9 @@ Route::middleware('auth')->group(function (): void {
             Route::patch('/centers/{serviceCenter}', [OwnerServiceCenterController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.update');
+            Route::patch('/centers/{serviceCenter}/opening-hours', [OwnerOpeningHourController::class, 'update'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.opening-hours.update');
         });
 
     Route::middleware('role:admin')
@@ -54,6 +59,9 @@ Route::middleware('auth')->group(function (): void {
             Route::patch('/service-centers/{serviceCenter}', [AdminServiceCenterController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.update');
+            Route::patch('/service-centers/{serviceCenter}/opening-hours', [AdminOpeningHourController::class, 'update'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.opening-hours.update');
             Route::patch('/service-centers/{serviceCenter}/status', [AdminServiceCenterController::class, 'updateStatus'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.status.update');

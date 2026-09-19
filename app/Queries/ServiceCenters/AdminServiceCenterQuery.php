@@ -52,6 +52,7 @@ class AdminServiceCenterQuery
                 'city.governorate',
                 'services',
                 'carBrands',
+                'openingHours',
                 'images' => fn (Builder|Relation $query): Builder|Relation => $query
                     ->orderBy('sort_order')
                     ->orderBy('id'),

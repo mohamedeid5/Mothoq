@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\OpeningHourController as AdminOpeningHourController;
 use App\Http\Controllers\Api\V1\Admin\ServiceCenterController as AdminServiceCenterController;
 use App\Http\Controllers\Api\V1\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Api\V1\Auth\CurrentUserController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
 use App\Http\Controllers\Api\V1\CarBrandController;
 use App\Http\Controllers\Api\V1\GovernorateCityController;
 use App\Http\Controllers\Api\V1\GovernorateController;
+use App\Http\Controllers\Api\V1\Owner\OpeningHourController as OwnerOpeningHourController;
 use App\Http\Controllers\Api\V1\Owner\ServiceCenterController as OwnerServiceCenterController;
 use App\Http\Controllers\Api\V1\ServiceCenterController;
 use App\Http\Controllers\Api\V1\ServiceController;
@@ -42,6 +44,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('service-centers/{serviceCenter}', [AdminServiceCenterController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.update');
+            Route::patch('service-centers/{serviceCenter}/opening-hours', [AdminOpeningHourController::class, 'update'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.opening-hours.update');
             Route::patch('service-centers/{serviceCenter}/status', [AdminServiceCenterController::class, 'updateStatus'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.status.update');
@@ -62,6 +67,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('service-centers/{serviceCenter}', [OwnerServiceCenterController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.update');
+            Route::patch('service-centers/{serviceCenter}/opening-hours', [OwnerOpeningHourController::class, 'update'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.opening-hours.update');
         });
 
     Route::get('governorates', [GovernorateController::class, 'index'])
