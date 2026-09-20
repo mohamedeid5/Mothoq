@@ -5,6 +5,8 @@ x-app: &app
   env_file:
     - path: .env.production
       required: true
+  volumes:
+    - storage_data:/var/www/html/storage/app/public
   restart: unless-stopped
   depends_on:
     mysql:
@@ -33,6 +35,8 @@ services:
     ports:
       - "80:80"
     restart: unless-stopped
+    volumes:
+      - storage_data:/var/www/html/storage/app/public:ro
     depends_on:
       app:
         condition: service_healthy
@@ -98,3 +102,4 @@ services:
 volumes:
   mysql_data:
   redis_data:
+  storage_data:

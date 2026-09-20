@@ -88,6 +88,11 @@
                 'serviceCenter' => $serviceCenter,
                 'action' => route('admin.service-centers.opening-hours.update', $serviceCenter),
             ])
+
+            @include('service-centers._images-form', [
+                'serviceCenter' => $serviceCenter,
+                'routePrefix' => 'admin',
+            ])
         </div>
     </section>
 @endsection

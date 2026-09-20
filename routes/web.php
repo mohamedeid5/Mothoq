@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Web\Admin\CenterImageController as AdminCenterImageController;
 use App\Http\Controllers\Web\Admin\DashboardController;
 use App\Http\Controllers\Web\Admin\OpeningHourController as AdminOpeningHourController;
 use App\Http\Controllers\Web\Admin\ServiceCenterController as AdminServiceCenterController;
 use App\Http\Controllers\Web\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Web\HomeController;
+use App\Http\Controllers\Web\Owner\CenterImageController as OwnerCenterImageController;
 use App\Http\Controllers\Web\Owner\OpeningHourController as OwnerOpeningHourController;
 use App\Http\Controllers\Web\Owner\ServiceCenterController as OwnerServiceCenterController;
 use App\Http\Controllers\Web\ServiceCenterController;
@@ -41,6 +43,21 @@ Route::middleware('auth')->group(function (): void {
             Route::patch('/centers/{serviceCenter}/opening-hours', [OwnerOpeningHourController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.opening-hours.update');
+            Route::post('/centers/{serviceCenter}/images', [OwnerCenterImageController::class, 'store'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.images.store');
+            Route::patch('/centers/{serviceCenter}/images/order', [OwnerCenterImageController::class, 'reorder'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.images.reorder');
+            Route::patch('/centers/{serviceCenter}/images/{centerImage}', [OwnerCenterImageController::class, 'update'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.update');
+            Route::put('/centers/{serviceCenter}/images/{centerImage}/cover', [OwnerCenterImageController::class, 'cover'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.cover.update');
+            Route::delete('/centers/{serviceCenter}/images/{centerImage}', [OwnerCenterImageController::class, 'destroy'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.destroy');
         });
 
     Route::middleware('role:admin')
@@ -62,6 +79,21 @@ Route::middleware('auth')->group(function (): void {
             Route::patch('/service-centers/{serviceCenter}/opening-hours', [AdminOpeningHourController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.opening-hours.update');
+            Route::post('/service-centers/{serviceCenter}/images', [AdminCenterImageController::class, 'store'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.images.store');
+            Route::patch('/service-centers/{serviceCenter}/images/order', [AdminCenterImageController::class, 'reorder'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.images.reorder');
+            Route::patch('/service-centers/{serviceCenter}/images/{centerImage}', [AdminCenterImageController::class, 'update'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.update');
+            Route::put('/service-centers/{serviceCenter}/images/{centerImage}/cover', [AdminCenterImageController::class, 'cover'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.cover.update');
+            Route::delete('/service-centers/{serviceCenter}/images/{centerImage}', [AdminCenterImageController::class, 'destroy'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.destroy');
             Route::patch('/service-centers/{serviceCenter}/status', [AdminServiceCenterController::class, 'updateStatus'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.status.update');

@@ -93,6 +93,11 @@
                 'serviceCenter' => $serviceCenter,
                 'action' => route('owner.service-centers.opening-hours.update', $serviceCenter),
             ])
+
+            @include('service-centers._images-form', [
+                'serviceCenter' => $serviceCenter,
+                'routePrefix' => 'owner',
+            ])
         </div>
     </section>
 @endsection

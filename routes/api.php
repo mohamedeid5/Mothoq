@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\CenterImageController as AdminCenterImageController;
 use App\Http\Controllers\Api\V1\Admin\OpeningHourController as AdminOpeningHourController;
 use App\Http\Controllers\Api\V1\Admin\ServiceCenterController as AdminServiceCenterController;
 use App\Http\Controllers\Api\V1\Auth\AuthenticatedSessionController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
 use App\Http\Controllers\Api\V1\CarBrandController;
 use App\Http\Controllers\Api\V1\GovernorateCityController;
 use App\Http\Controllers\Api\V1\GovernorateController;
+use App\Http\Controllers\Api\V1\Owner\CenterImageController as OwnerCenterImageController;
 use App\Http\Controllers\Api\V1\Owner\OpeningHourController as OwnerOpeningHourController;
 use App\Http\Controllers\Api\V1\Owner\ServiceCenterController as OwnerServiceCenterController;
 use App\Http\Controllers\Api\V1\ServiceCenterController;
@@ -47,6 +49,21 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('service-centers/{serviceCenter}/opening-hours', [AdminOpeningHourController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.opening-hours.update');
+            Route::post('service-centers/{serviceCenter}/images', [AdminCenterImageController::class, 'store'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.images.store');
+            Route::patch('service-centers/{serviceCenter}/images/order', [AdminCenterImageController::class, 'reorder'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.images.reorder');
+            Route::patch('service-centers/{serviceCenter}/images/{centerImage}', [AdminCenterImageController::class, 'update'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.update');
+            Route::put('service-centers/{serviceCenter}/images/{centerImage}/cover', [AdminCenterImageController::class, 'cover'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.cover.update');
+            Route::delete('service-centers/{serviceCenter}/images/{centerImage}', [AdminCenterImageController::class, 'destroy'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.destroy');
             Route::patch('service-centers/{serviceCenter}/status', [AdminServiceCenterController::class, 'updateStatus'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.status.update');
@@ -70,6 +87,21 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('service-centers/{serviceCenter}/opening-hours', [OwnerOpeningHourController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.opening-hours.update');
+            Route::post('service-centers/{serviceCenter}/images', [OwnerCenterImageController::class, 'store'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.images.store');
+            Route::patch('service-centers/{serviceCenter}/images/order', [OwnerCenterImageController::class, 'reorder'])
+                ->whereNumber('serviceCenter')
+                ->name('service-centers.images.reorder');
+            Route::patch('service-centers/{serviceCenter}/images/{centerImage}', [OwnerCenterImageController::class, 'update'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.update');
+            Route::put('service-centers/{serviceCenter}/images/{centerImage}/cover', [OwnerCenterImageController::class, 'cover'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.cover.update');
+            Route::delete('service-centers/{serviceCenter}/images/{centerImage}', [OwnerCenterImageController::class, 'destroy'])
+                ->whereNumber(['serviceCenter', 'centerImage'])
+                ->name('service-centers.images.destroy');
         });
 
     Route::get('governorates', [GovernorateController::class, 'index'])

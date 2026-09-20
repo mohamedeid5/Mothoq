@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['service_center_id', 'path', 'alt_text', 'is_cover', 'sort_order'])]
 class CenterImage extends Model
 {
+    public const MAX_PER_SERVICE_CENTER = 10;
+
     /** @use HasFactory<CenterImageFactory> */
     use HasFactory;
 

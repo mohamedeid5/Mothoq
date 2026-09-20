@@ -32,6 +32,11 @@ class CenterImagePolicy
             && $serviceCenter->owner_id === $user->id;
     }
 
+    public function reorder(User $user, ServiceCenter $serviceCenter): bool
+    {
+        return $this->create($user, $serviceCenter);
+    }
+
     public function update(User $user, CenterImage $centerImage): bool
     {
         return $user->role === UserRole::CenterOwner

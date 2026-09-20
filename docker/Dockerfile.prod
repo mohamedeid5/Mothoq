@@ -90,7 +90,8 @@ COPY --from=vendor --chown=www-data:www-data /var/www/html/bootstrap/cache ./boo
 COPY --from=frontend --chown=www-data:www-data /var/www/html/public/build ./public/build
 
 RUN chmod +x /usr/local/bin/mothoq-entrypoint \
-    && chown -R www-data:www-data bootstrap/cache storage
+    && chown -R www-data:www-data bootstrap/cache storage \
+    && php artisan storage:link --no-interaction
 
 USER www-data
 

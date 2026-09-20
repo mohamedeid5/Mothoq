@@ -5,6 +5,8 @@ namespace App\Queries\ServiceCenters;
 use App\Models\ServiceCenter;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class OwnerServiceCenterQuery
 {
@@ -23,7 +25,16 @@ final class OwnerServiceCenterQuery
     public function findForOwnerOrFail(User $owner, int $serviceCenterId): ServiceCenter
     {
         return $owner->serviceCenters()
-            ->with(['owner', 'city.governorate', 'services', 'carBrands', 'openingHours'])
+            ->with([
+                'owner',
+                'city.governorate',
+                'services',
+                'carBrands',
+                'openingHours',
+                'images' => fn (Builder|Relation $query): Builder|Relation => $query
+                    ->orderBy('sort_order')
+                    ->orderBy('id'),
+            ])
             ->findOrFail($serviceCenterId);
     }
 }

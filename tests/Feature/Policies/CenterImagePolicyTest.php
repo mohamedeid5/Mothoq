@@ -21,6 +21,7 @@ class CenterImagePolicyTest extends TestCase
         $gate = Gate::forUser($admin);
 
         $this->assertTrue($gate->allows('create', [CenterImage::class, $serviceCenter]));
+        $this->assertTrue($gate->allows('reorder', [CenterImage::class, $serviceCenter]));
         $this->assertTrue($gate->allows('update', $centerImage));
         $this->assertTrue($gate->allows('delete', $centerImage));
     }
@@ -35,9 +36,11 @@ class CenterImagePolicyTest extends TestCase
         $gate = Gate::forUser($owner);
 
         $this->assertTrue($gate->allows('create', [CenterImage::class, $ownServiceCenter]));
+        $this->assertTrue($gate->allows('reorder', [CenterImage::class, $ownServiceCenter]));
         $this->assertTrue($gate->allows('update', $ownImage));
         $this->assertTrue($gate->allows('delete', $ownImage));
         $this->assertFalse($gate->allows('create', [CenterImage::class, $otherServiceCenter]));
+        $this->assertFalse($gate->allows('reorder', [CenterImage::class, $otherServiceCenter]));
         $this->assertFalse($gate->allows('update', $otherImage));
         $this->assertFalse($gate->allows('delete', $otherImage));
     }
@@ -50,6 +53,7 @@ class CenterImagePolicyTest extends TestCase
         $gate = Gate::forUser($customer);
 
         $this->assertFalse($gate->allows('create', [CenterImage::class, $serviceCenter]));
+        $this->assertFalse($gate->allows('reorder', [CenterImage::class, $serviceCenter]));
         $this->assertFalse($gate->allows('update', $centerImage));
         $this->assertFalse($gate->allows('delete', $centerImage));
     }

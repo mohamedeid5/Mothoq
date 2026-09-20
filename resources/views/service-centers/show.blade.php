@@ -29,6 +29,14 @@
                         </div>
                     </div>
 
+                    @if ($serviceCenter->images->count() > 1)
+                        <section class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="صور مركز الصيانة">
+                            @foreach ($serviceCenter->images as $centerImage)
+                                <img src="{{ Storage::disk('public')->url($centerImage->path) }}" alt="{{ $centerImage->alt_text ?: $serviceCenter->name }}" class="aspect-video w-full rounded-2xl border border-[#e0e8e5] object-cover" loading="lazy">
+                            @endforeach
+                        </section>
+                    @endif
+
                     <div class="mt-6 grid gap-6">
                         <section class="rounded-3xl border border-[#e0e8e5] bg-white p-6 sm:p-7"><h2 class="text-xl font-black text-ink-950">عن المركز</h2><p class="mt-3 text-sm leading-8 text-[#60777c] sm:text-base">{{ $serviceCenter->description ?: 'مركز متخصص يقدم خدمات صيانة وفحص السيارات.' }}</p></section>
                         <section class="grid gap-6 md:grid-cols-2">
