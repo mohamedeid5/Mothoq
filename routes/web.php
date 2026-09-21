@@ -3,12 +3,14 @@
 use App\Http\Controllers\Web\Admin\CenterImageController as AdminCenterImageController;
 use App\Http\Controllers\Web\Admin\DashboardController;
 use App\Http\Controllers\Web\Admin\OpeningHourController as AdminOpeningHourController;
+use App\Http\Controllers\Web\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Web\Admin\ServiceCenterController as AdminServiceCenterController;
 use App\Http\Controllers\Web\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Web\Owner\CenterImageController as OwnerCenterImageController;
 use App\Http\Controllers\Web\Owner\OpeningHourController as OwnerOpeningHourController;
 use App\Http\Controllers\Web\Owner\ServiceCenterController as OwnerServiceCenterController;
+use App\Http\Controllers\Web\ReviewController;
 use App\Http\Controllers\Web\ServiceCenterController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +29,15 @@ Route::middleware('guest')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+
+    Route::post('/centers/{serviceCenter}/reviews', [ReviewController::class, 'store'])
+        ->name('reviews.store');
+    Route::patch('/reviews/{review}', [ReviewController::class, 'update'])
+        ->whereNumber('review')
+        ->name('reviews.update');
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])
+        ->whereNumber('review')
+        ->name('reviews.destroy');
 
     Route::middleware('role:center_owner')
         ->prefix('owner')
@@ -67,6 +78,11 @@ Route::middleware('auth')->group(function (): void {
             Route::get('/', DashboardController::class)->name('dashboard');
             Route::get('/service-centers', [AdminServiceCenterController::class, 'index'])
                 ->name('service-centers.index');
+            Route::get('/reviews', [AdminReviewController::class, 'index'])
+                ->name('reviews.index');
+            Route::patch('/reviews/{review}/status', [AdminReviewController::class, 'updateStatus'])
+                ->whereNumber('review')
+                ->name('reviews.status.update');
             Route::get('/service-centers/{serviceCenter}', [AdminServiceCenterController::class, 'show'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.show');

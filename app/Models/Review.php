@@ -25,7 +25,7 @@ class Review extends Model
 
     public function serviceCenter(): BelongsTo
     {
-        return $this->belongsTo(ServiceCenter::class);
+        return $this->belongsTo(ServiceCenter::class)->withTrashed();
     }
 
     #[Scope]

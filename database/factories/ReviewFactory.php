@@ -37,4 +37,12 @@ class ReviewFactory extends Factory
             'published_at' => now(),
         ]);
     }
+
+    public function rejected(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'status' => ReviewStatus::Rejected,
+            'published_at' => null,
+        ]);
+    }
 }

@@ -13,6 +13,7 @@ final class SetCenterCoverImageAction
             $centerImage->serviceCenter
                 ->images()
                 ->whereKeyNot($centerImage->id)
+                ->where('is_cover', true)
                 ->update(['is_cover' => false]);
 
             $centerImage->update(['is_cover' => true]);

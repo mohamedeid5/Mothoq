@@ -12,6 +12,10 @@
 
     <section class="py-8 sm:py-12">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            @if (session('success'))
+                <div role="status" class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">{{ session('success') }}</div>
+            @endif
+
             <div class="grid gap-7 lg:grid-cols-[1fr_360px]">
                 <div>
                     <div class="relative min-h-80 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#d9eee7] to-[#cbd9d5] sm:min-h-105">
@@ -47,6 +51,14 @@
                         @if ($serviceCenter->openingHours->isNotEmpty())
                             <section class="rounded-3xl border border-[#e0e8e5] bg-white p-6 sm:p-7"><h2 class="text-xl font-black text-ink-950">مواعيد العمل</h2><div class="mt-5 grid gap-x-8 gap-y-1 sm:grid-cols-2">@foreach ($serviceCenter->openingHours->sortBy(fn ($hours) => $hours->day_of_week->sortOrder()) as $hours)<div class="flex items-center justify-between border-b border-[#edf1ef] py-3 text-sm"><span class="font-bold text-[#405c62]">{{ $hours->day_of_week->label() }}</span><span class="{{ $hours->is_closed ? 'text-red-600' : 'text-[#6e8287]' }}">{{ $hours->is_closed ? 'مغلق' : substr($hours->opens_at, 0, 5).' - '.substr($hours->closes_at, 0, 5) }}</span></div>@endforeach</div></section>
                         @endif
+
+                        @auth
+                            @if (auth()->user()->role === App\Enums\UserRole::Customer)
+                                @include('service-centers._review-form', ['serviceCenter' => $serviceCenter, 'viewerReview' => $viewerReview])
+                            @endif
+                        @else
+                            <section class="rounded-3xl border border-[#e0e8e5] bg-white p-6 sm:p-7"><h2 class="text-xl font-black text-ink-950">قيّم تجربتك</h2><p class="mt-2 text-sm leading-7 text-[#687d82]">سجّل دخولك لتضيف تقييمك لهذا المركز.</p><a href="{{ route('login') }}" class="mt-4 inline-flex rounded-xl bg-brand-600 px-5 py-3 text-sm font-black text-white hover:bg-brand-500">تسجيل الدخول</a></section>
+                        @endauth
 
                         @if ($serviceCenter->publishedReviews->isNotEmpty())
                             <section class="rounded-3xl border border-[#e0e8e5] bg-white p-6 sm:p-7"><h2 class="text-xl font-black text-ink-950">أحدث التقييمات</h2><div class="mt-5 grid gap-4 sm:grid-cols-2">@foreach ($serviceCenter->publishedReviews as $review)<article class="rounded-2xl bg-[#f7f9f8] p-4"><div class="flex items-center justify-between gap-3"><strong class="text-sm text-ink-950">{{ $review->user->name }}</strong><span class="text-sm text-gold-400">★ {{ $review->rating }}</span></div><p class="mt-3 text-sm leading-7 text-[#687d82]">{{ $review->comment }}</p></article>@endforeach</div></section>

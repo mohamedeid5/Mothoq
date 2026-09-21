@@ -20,11 +20,19 @@ class ReviewResource extends JsonResource
             'id' => $this->id,
             'rating' => $this->rating,
             'comment' => $this->comment,
+            'status' => $this->status->value,
+            'status_label' => $this->status->label(),
             'published_at' => $this->published_at?->toISOString(),
+            'created_at' => $this->created_at?->toISOString(),
             'user' => [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
             ],
+            'service_center' => $this->whenLoaded('serviceCenter', fn (): array => [
+                'id' => $this->serviceCenter->id,
+                'name' => $this->serviceCenter->name,
+                'slug' => $this->serviceCenter->slug,
+            ]),
         ];
     }
 }

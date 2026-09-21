@@ -64,4 +64,16 @@ class ReviewTest extends TestCase
         $this->assertSoftDeleted($customer);
         $this->assertTrue($review->user->is($customer));
     }
+
+    public function test_soft_deleted_service_center_remains_available_to_review_history(): void
+    {
+        $serviceCenter = ServiceCenter::factory()->create();
+        $review = Review::factory()->for($serviceCenter)->create();
+
+        $serviceCenter->delete();
+        $review->refresh();
+
+        $this->assertSoftDeleted($serviceCenter);
+        $this->assertTrue($review->serviceCenter->is($serviceCenter));
+    }
 }

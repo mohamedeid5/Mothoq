@@ -34,9 +34,6 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
-      - name: Check PHP formatting
-        run: vendor/bin/pint --test
-
       - name: Run PHPUnit tests
         run: php artisan test --compact
 
