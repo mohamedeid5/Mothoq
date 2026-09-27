@@ -1,6 +1,36 @@
 # syntax=docker/dockerfile:1.7
 
-FROM composer:2.9 AS vendor
+FROM php:8.4-fpm-bookworm AS php-extensions
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libcurl4-openssl-dev \
+        libfreetype6-dev \
+        libicu-dev \
+        libjpeg62-turbo-dev \
+        libonig-dev \
+        libpng-dev \
+        libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        bcmath \
+        curl \
+        exif \
+        gd \
+        intl \
+        mbstring \
+        opcache \
+        pcntl \
+        pdo_mysql \
+        zip \
+    && pecl install redis-6.3.0 \
+    && docker-php-ext-enable redis \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/pear
+
+FROM php-extensions AS vendor
+
+COPY --from=composer:2.9 /usr/bin/composer /usr/local/bin/composer
 
 WORKDIR /var/www/html
 
@@ -33,34 +63,6 @@ COPY resources ./resources
 COPY vite.config.js ./vite.config.js
 
 RUN npm run build
-
-FROM php:8.4-fpm-bookworm AS php-extensions
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        libcurl4-openssl-dev \
-        libfreetype6-dev \
-        libicu-dev \
-        libjpeg62-turbo-dev \
-        libonig-dev \
-        libpng-dev \
-        libzip-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" \
-        bcmath \
-        curl \
-        exif \
-        gd \
-        intl \
-        mbstring \
-        opcache \
-        pcntl \
-        pdo_mysql \
-        zip \
-    && pecl install redis-6.3.0 \
-    && docker-php-ext-enable redis \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/pear
 
 FROM php:8.4-fpm-bookworm AS app
 
