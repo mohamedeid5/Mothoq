@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\V1\Admin\CenterImageController as AdminCenterImageController;
 use App\Http\Controllers\Api\V1\Admin\OpeningHourController as AdminOpeningHourController;
 use App\Http\Controllers\Api\V1\Admin\ReviewController as AdminReviewController;
@@ -7,9 +8,11 @@ use App\Http\Controllers\Api\V1\Admin\ServiceCenterController as AdminServiceCen
 use App\Http\Controllers\Api\V1\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Api\V1\Auth\CurrentUserController;
 use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
+use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\CarBrandController;
 use App\Http\Controllers\Api\V1\GovernorateCityController;
 use App\Http\Controllers\Api\V1\GovernorateController;
+use App\Http\Controllers\Api\V1\Owner\BookingController as OwnerBookingController;
 use App\Http\Controllers\Api\V1\Owner\CenterImageController as OwnerCenterImageController;
 use App\Http\Controllers\Api\V1\Owner\OpeningHourController as OwnerOpeningHourController;
 use App\Http\Controllers\Api\V1\Owner\ServiceCenterController as OwnerServiceCenterController;
@@ -45,10 +48,25 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->name('reviews.destroy');
     });
 
+    Route::middleware(['auth:sanctum', 'role:customer'])->group(function (): void {
+        Route::get('bookings', [BookingController::class, 'index'])
+            ->name('bookings.index');
+        Route::post('service-centers/{serviceCenter}/bookings', [BookingController::class, 'store'])
+            ->name('bookings.store');
+        Route::delete('bookings/{booking}', [BookingController::class, 'destroy'])
+            ->whereNumber('booking')
+            ->name('bookings.destroy');
+    });
+
     Route::middleware(['auth:sanctum', 'role:admin'])
         ->prefix('admin')
         ->name('admin.')
         ->group(function (): void {
+            Route::get('bookings', [AdminBookingController::class, 'index'])
+                ->name('bookings.index');
+            Route::patch('bookings/{booking}', [AdminBookingController::class, 'update'])
+                ->whereNumber('booking')
+                ->name('bookings.update');
             Route::get('service-centers', [AdminServiceCenterController::class, 'index'])
                 ->name('service-centers.index');
             Route::get('reviews', [AdminReviewController::class, 'index'])
@@ -94,6 +112,11 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         ->prefix('owner')
         ->name('owner.')
         ->group(function (): void {
+            Route::get('bookings', [OwnerBookingController::class, 'index'])
+                ->name('bookings.index');
+            Route::patch('bookings/{booking}', [OwnerBookingController::class, 'update'])
+                ->whereNumber('booking')
+                ->name('bookings.update');
             Route::get('service-centers', [OwnerServiceCenterController::class, 'index'])
                 ->name('service-centers.index');
             Route::get('service-centers/{serviceCenter}', [OwnerServiceCenterController::class, 'show'])

@@ -4,6 +4,8 @@ set -Eeuo pipefail
 cd /opt/mothoq
 umask 077
 
+printf '%s' '${nginx_config_base64}' | base64 --decode > /opt/mothoq/nginx-origin.conf
+
 temporary_environment="$(mktemp /opt/mothoq/.env.production.XXXXXX)"
 trap 'rm -f "$temporary_environment"' EXIT
 
@@ -24,6 +26,8 @@ trap 'docker logout "${registry_host}" >/dev/null 2>&1 || true' EXIT
 docker compose --env-file .env.production pull
 docker compose --env-file .env.production run --rm app php artisan migrate --force
 docker compose --env-file .env.production up --detach --remove-orphans
+curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors http://127.0.0.1/up >/dev/null
+/usr/local/bin/mothoq-enable-https
 docker image prune --force
 
 curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors http://127.0.0.1/up

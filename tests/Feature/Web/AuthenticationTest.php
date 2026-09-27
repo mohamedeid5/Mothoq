@@ -45,6 +45,20 @@ class AuthenticationTest extends TestCase
         $this->assertAuthenticatedAs($admin);
     }
 
+    public function test_customer_is_redirected_to_bookings_after_login(): void
+    {
+        $customer = User::factory()->create([
+            'password' => 'password',
+        ]);
+
+        $this->post(route('login.store'), [
+            'email' => $customer->email,
+            'password' => 'password',
+        ])->assertRedirect(route('bookings.index'));
+
+        $this->assertAuthenticatedAs($customer);
+    }
+
     public function test_invalid_credentials_return_to_login_with_an_error(): void
     {
         $user = User::factory()->create();

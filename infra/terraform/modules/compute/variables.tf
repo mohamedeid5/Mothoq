@@ -3,6 +3,11 @@ variable "name" {
   type        = string
 }
 
+variable "domain_name" {
+  description = "Application domain whose origin receives a renewable TLS certificate."
+  type        = string
+}
+
 variable "aws_region" {
   description = "AWS region containing the deployment resources."
   type        = string

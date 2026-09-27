@@ -48,6 +48,11 @@ variable "environment_parameter_arn" {
   type        = string
 }
 
+variable "ses_identity_arn" {
+  description = "SES domain identity the application instance may send from."
+  type        = string
+}
+
 variable "github_oidc_subject" {
   description = "Exact GitHub OIDC subject allowed to assume the deployment role."
   type        = string

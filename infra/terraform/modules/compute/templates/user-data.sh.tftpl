@@ -6,6 +6,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y --no-install-recommends \
   ca-certificates \
+  certbot \
   curl \
   docker.io \
   unzip
@@ -40,6 +41,10 @@ if ! swapon --show | grep -q /swapfile; then
 fi
 
 install -d -m 0750 /opt/mothoq
+install -d -m 0755 /opt/mothoq/acme /opt/mothoq/tls /etc/letsencrypt
+printf '%s' '${nginx_config_base64}' | base64 --decode > /opt/mothoq/nginx-origin.conf
+printf '%s' '${tls_script_base64}' | base64 --decode > /usr/local/bin/mothoq-enable-https
+chmod 0750 /usr/local/bin/mothoq-enable-https
 printf '%s' '${compose_file_base64}' | base64 --decode > /opt/mothoq/compose.yaml
 chmod 0640 /opt/mothoq/compose.yaml
 

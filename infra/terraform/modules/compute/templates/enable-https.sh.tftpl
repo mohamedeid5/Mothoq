@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+install -d -m 0755 /opt/mothoq/acme /opt/mothoq/tls /etc/letsencrypt/renewal-hooks/deploy
+
+cat > /etc/letsencrypt/renewal-hooks/deploy/mothoq-nginx <<'HOOK'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+docker exec mothoq-nginx-1 nginx -t
+docker exec mothoq-nginx-1 nginx -s reload
+HOOK
+chmod 0750 /etc/letsencrypt/renewal-hooks/deploy/mothoq-nginx
+
+certbot certonly --non-interactive --agree-tos --register-unsafely-without-email \
+  --webroot --webroot-path /opt/mothoq/acme \
+  --cert-name mothoq-origin --key-type rsa --rsa-key-size 2048 \
+  --keep-until-expiring -d 'origin.${domain_name}'
+
+cat > /opt/mothoq/tls/origin.conf <<'NGINX'
+listen 443 ssl;
+ssl_certificate /etc/letsencrypt/live/mothoq-origin/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/mothoq-origin/privkey.pem;
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_session_cache shared:OriginTLS:10m;
+ssl_session_timeout 1d;
+ssl_session_tickets off;
+NGINX
+
+docker exec mothoq-nginx-1 nginx -t
+docker exec mothoq-nginx-1 nginx -s reload
+systemctl enable --now certbot.timer
+curl --fail --silent --show-error --retry 5 --retry-delay 2 --retry-all-errors \
+  --resolve 'origin.${domain_name}:443:127.0.0.1' \
+  'https://origin.${domain_name}/up' >/dev/null

@@ -20,7 +20,7 @@ class DatabaseSeederTest extends TestCase
         $admin = User::query()->where('email', 'admin@mothoq.test')->firstOrFail();
         $owner = User::query()->where('email', 'owner@mothoq.test')->firstOrFail();
         $serviceCenter = ServiceCenter::query()
-            ->with(['owner', 'city.governorate', 'services', 'carBrands', 'openingHours', 'images', 'reviews'])
+            ->with(['owner', 'city.governorate', 'services', 'carBrands', 'openingHours', 'images', 'reviews', 'bookings'])
             ->firstOrFail();
 
         $this->assertSame(UserRole::Admin, $admin->role);
@@ -35,11 +35,13 @@ class DatabaseSeederTest extends TestCase
         $this->assertDatabaseCount('opening_hours', 21);
         $this->assertDatabaseCount('center_images', 3);
         $this->assertDatabaseCount('reviews', 3);
+        $this->assertDatabaseCount('bookings', 3);
         $this->assertNotNull($serviceCenter->city->governorate);
         $this->assertNotEmpty($serviceCenter->services);
         $this->assertNotEmpty($serviceCenter->carBrands);
         $this->assertCount(7, $serviceCenter->openingHours);
         $this->assertCount(1, $serviceCenter->images);
         $this->assertCount(1, $serviceCenter->reviews);
+        $this->assertCount(1, $serviceCenter->bookings);
     }
 }

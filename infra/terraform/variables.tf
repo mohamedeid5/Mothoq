@@ -16,6 +16,12 @@ variable "environment" {
   default     = "production"
 }
 
+variable "domain_name" {
+  description = "Public domain used by the Mothoq application and SES sender identity."
+  type        = string
+  default     = "mothoq.store"
+}
+
 variable "instance_type" {
   description = "EC2 instance type. Keep this eligible for your account's Free Tier."
   type        = string

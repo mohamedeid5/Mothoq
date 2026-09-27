@@ -18,7 +18,11 @@ resource "aws_instance" "app" {
   user_data_replace_on_change = false
 
   user_data = templatefile("${path.module}/templates/user-data.sh.tftpl", {
-    compose_version = var.compose_version
+    compose_version     = var.compose_version
+    nginx_config_base64 = base64encode(file("${path.module}/../../../../docker/nginx/default.prod.conf"))
+    tls_script_base64 = base64encode(templatefile("${path.module}/templates/enable-https.sh.tftpl", {
+      domain_name = var.domain_name
+    }))
     compose_file_base64 = base64encode(templatefile("${path.module}/templates/compose.ec2.yaml.tftpl", {
       app_repository   = var.app_repository_url
       nginx_repository = var.nginx_repository_url
@@ -26,9 +30,10 @@ resource "aws_instance" "app" {
       log_group_name   = var.log_group_name
     }))
     deploy_script_base64 = base64encode(templatefile("${path.module}/templates/deploy.sh.tftpl", {
-      aws_region     = var.aws_region
-      parameter_name = var.environment_parameter_path
-      registry_host  = split("/", var.app_repository_url)[0]
+      aws_region          = var.aws_region
+      parameter_name      = var.environment_parameter_path
+      registry_host       = split("/", var.app_repository_url)[0]
+      nginx_config_base64 = base64encode(file("${path.module}/../../../../docker/nginx/default.prod.conf"))
     }))
   })
 
@@ -40,12 +45,13 @@ resource "aws_instance" "app" {
   }
 
   metadata_options {
-    http_endpoint = "enabled"
-    http_tokens   = "required"
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 2
   }
 
   lifecycle {
-    ignore_changes = [user_data]
+    ignore_changes = [ami, user_data]
 
     precondition {
       condition     = !startswith(var.instance_type, "t4g.")

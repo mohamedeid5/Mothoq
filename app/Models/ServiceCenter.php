@@ -58,6 +58,11 @@ class ServiceCenter extends Model
         return $this->hasMany(Review::class);
     }
 
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
     public function publishedReviews(): HasMany
     {
         return $this->reviews()->published();

@@ -11,6 +11,8 @@
                 <p class="mt-3 max-w-2xl text-white/60">راجع مراكزك وحدّث البيانات التي تظهر للعملاء.</p>
             </header>
 
+            <a href="{{ route('owner.bookings.index') }}" class="mt-6 flex items-center justify-between rounded-3xl border border-brand-100 bg-brand-50 p-5 text-brand-800 transition hover:border-brand-300"><span><strong class="block text-lg font-black">طلبات الحجز</strong><span class="mt-1 block text-sm">راجع الطلبات الجديدة وحدّث حالتها.</span></span><span class="text-2xl">←</span></a>
+
             <div class="mt-8 rounded-3xl border border-slate-200 bg-white p-5 sm:p-7">
                 <div class="mb-6"><p class="text-xs font-black text-brand-700">مراكزك</p><h2 class="mt-1 text-2xl font-black text-ink-950">إدارة مراكز الصيانة</h2></div>
                 <div class="grid gap-4">

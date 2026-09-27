@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             OpeningHourSeeder::class,
             CenterImageSeeder::class,
             ReviewSeeder::class,
+            BookingSeeder::class,
         ]);
     }
 }

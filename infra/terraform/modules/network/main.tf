@@ -2,6 +2,10 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+data "aws_ec2_managed_prefix_list" "cloudfront" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
 resource "aws_vpc" "main" {
   cidr_block           = "10.20.0.0/16"
   enable_dns_hostnames = true
@@ -60,6 +64,14 @@ resource "aws_security_group" "web" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = var.allowed_http_cidrs
+  }
+
+  ingress {
+    description     = "HTTPS from CloudFront"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    prefix_list_ids = [data.aws_ec2_managed_prefix_list.cloudfront.id]
   }
 
   egress {

@@ -264,6 +264,15 @@ resource "aws_iam_role_policy" "deployment" {
         ]
         Resource = "${var.log_group_arn}:*"
       },
+      {
+        Sid    = "SendTransactionalEmail"
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail",
+        ]
+        Resource = var.ses_identity_arn
+      },
     ]
   })
 }

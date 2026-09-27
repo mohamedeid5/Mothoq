@@ -13,7 +13,7 @@ enum UserRole: string
         return match ($this) {
             self::Admin => 'admin.dashboard',
             self::CenterOwner => 'owner.dashboard',
-            self::Customer => 'home',
+            self::Customer => 'bookings.index',
         };
     }
 }

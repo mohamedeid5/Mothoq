@@ -72,6 +72,11 @@
                         <div class="mt-6 grid gap-3"><a href="tel:{{ $serviceCenter->phone }}" class="flex h-13 items-center justify-center rounded-xl bg-ink-950 text-sm font-black text-white hover:bg-brand-700">اتصل الآن</a>@if ($serviceCenter->whatsapp)<a href="https://wa.me/20{{ ltrim(preg_replace('/\D+/', '', $serviceCenter->whatsapp), '0') }}" target="_blank" rel="noopener noreferrer" class="flex h-13 items-center justify-center rounded-xl bg-[#25a866] text-sm font-black text-white">واتساب</a>@endif</div>
                         <div class="mt-6 grid gap-3 border-t border-[#edf1ef] pt-5 text-sm"><div class="flex justify-between gap-4"><span class="text-[#7a8d91]">رقم الهاتف</span><a href="tel:{{ $serviceCenter->phone }}" dir="ltr" class="font-bold text-ink-950">{{ $serviceCenter->phone }}</a></div><div class="flex justify-between"><span class="text-[#7a8d91]">المدينة</span><strong>{{ $serviceCenter->city->name }}</strong></div><div class="flex justify-between"><span class="text-[#7a8d91]">حالة التوثيق</span><strong class="{{ $serviceCenter->verified_at ? 'text-brand-700' : 'text-[#7a8d91]' }}">{{ $serviceCenter->verified_at ? 'موثق' : 'غير موثق' }}</strong></div></div>
                     </div>
+                    @auth
+                        @if (auth()->user()->role === App\Enums\UserRole::Customer)
+                            @include('service-centers._booking-form', ['serviceCenter' => $serviceCenter])
+                        @endif
+                    @endauth
                     <div class="mt-4 rounded-2xl border border-[#e4e9e7] bg-[#f0f5f3] p-4 text-xs leading-6 text-[#61777c]"><strong class="text-ink-950">نصيحة موثوق:</strong> اتأكد من تفاصيل الخدمة والسعر مع المركز قبل الزيارة.</div>
                 </aside>
             </div>

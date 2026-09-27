@@ -9,7 +9,12 @@ output "public_ip" {
 }
 
 output "application_url" {
-  description = "Temporary HTTP URL before a domain and TLS are configured."
+  description = "Canonical HTTPS URL served through CloudFront."
+  value       = "https://${var.domain_name}"
+}
+
+output "origin_url" {
+  description = "Direct HTTP origin URL used for infrastructure diagnostics."
   value       = "http://${module.compute.public_ip}"
 }
 
@@ -36,4 +41,9 @@ output "session_manager_command" {
 output "github_actions_role_arn" {
   description = "IAM role used by the GitHub Actions deployment workflow."
   value       = module.identity.github_actions_role_arn
+}
+
+output "ses_identity_arn" {
+  description = "Verified SES identity used for transactional email."
+  value       = aws_ses_domain_identity.application.arn
 }

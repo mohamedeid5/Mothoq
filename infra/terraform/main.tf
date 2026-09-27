@@ -12,6 +12,7 @@ module "identity" {
   log_group_arn             = local.log_group_arn
   environment_parameter_arn = local.environment_parameter_arn
   github_oidc_subject       = local.github_oidc_subject
+  ses_identity_arn          = local.ses_identity_arn
 }
 
 module "network" {
@@ -43,6 +44,7 @@ module "compute" {
   source = "./modules/compute"
 
   name                       = local.name
+  domain_name                = var.domain_name
   aws_region                 = var.aws_region
   instance_type              = var.instance_type
   root_volume_size           = var.root_volume_size
