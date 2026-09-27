@@ -12,7 +12,7 @@ module "identity" {
   log_group_arn             = local.log_group_arn
   environment_parameter_arn = local.environment_parameter_arn
   github_oidc_subject       = local.github_oidc_subject
-  ses_identity_arn          = local.ses_identity_arn
+  ses_from_address          = "noreply@${var.domain_name}"
 }
 
 module "network" {

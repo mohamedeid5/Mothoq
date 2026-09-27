@@ -271,7 +271,12 @@ resource "aws_iam_role_policy" "deployment" {
           "ses:SendEmail",
           "ses:SendRawEmail",
         ]
-        Resource = var.ses_identity_arn
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "ses:FromAddress" = var.ses_from_address
+          }
+        }
       },
     ]
   })

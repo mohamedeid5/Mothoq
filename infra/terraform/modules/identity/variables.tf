@@ -48,8 +48,8 @@ variable "environment_parameter_arn" {
   type        = string
 }
 
-variable "ses_identity_arn" {
-  description = "SES domain identity the application instance may send from."
+variable "ses_from_address" {
+  description = "Exact verified sender address the application instance may use."
   type        = string
 }
 
