@@ -19,7 +19,7 @@ services:
       - .:/var/www/html:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
 
-  queue:
+  horizon:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
@@ -30,7 +30,8 @@ services:
     volumes:
       - .:/var/www/html
       - vendor_data:/var/www/html/vendor
-    command: php artisan queue:work --sleep=1 --tries=3 --timeout=90
+    command: php artisan horizon --no-interaction
+    stop_grace_period: 120s
     restart: unless-stopped
     depends_on:
       app:

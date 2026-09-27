@@ -41,9 +41,10 @@ services:
       retries: 3
       start_period: 20s
 
-  queue:
+  horizon:
     <<: *production-app
-    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90 --max-time=3600
+    command: php artisan horizon --no-interaction
+    stop_grace_period: 120s
 
   scheduler:
     <<: *production-app
