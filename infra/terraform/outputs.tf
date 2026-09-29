@@ -28,6 +28,11 @@ output "nginx_repository_url" {
   value       = module.storage.nginx_repository_url
 }
 
+output "cloudwatch_log_group_name" {
+  description = "CloudWatch Logs group receiving production container stdout and stderr."
+  value       = module.observability.log_group_name
+}
+
 output "production_env_parameter" {
   description = "Create this SecureString parameter separately so its secret never enters Terraform state."
   value       = local.parameter_path

@@ -44,6 +44,20 @@ variable "root_volume_size" {
   }
 }
 
+variable "log_retention_days" {
+  description = "Number of days to retain production container logs in CloudWatch Logs."
+  type        = number
+  default     = 30
+
+  validation {
+    condition = contains([
+      1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180,
+      365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653,
+    ], var.log_retention_days)
+    error_message = "Choose a CloudWatch Logs retention period supported by AWS."
+  }
+}
+
 variable "allowed_http_cidrs" {
   description = "IPv4 networks allowed to reach the public HTTP endpoint."
   type        = list(string)

@@ -19,6 +19,7 @@ x-app: &app
       awslogs-region: ${aws_region}
       awslogs-group: ${log_group_name}
       awslogs-create-group: "false"
+      tag: "{{.Name}}/{{.ID}}"
 
 services:
   app:

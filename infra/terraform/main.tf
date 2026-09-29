@@ -34,8 +34,9 @@ module "storage" {
 module "observability" {
   source = "./modules/observability"
 
-  project_name = var.project_name
-  environment  = var.environment
+  project_name      = var.project_name
+  environment       = var.environment
+  retention_in_days = var.log_retention_days
 
   depends_on = [module.identity]
 }
