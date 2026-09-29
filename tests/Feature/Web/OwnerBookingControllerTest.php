@@ -62,7 +62,8 @@ class OwnerBookingControllerTest extends TestCase
         Mail::assertQueued(
             BookingStatusUpdated::class,
             fn (BookingStatusUpdated $mail): bool => $mail->hasTo($booking->customer->email)
-                && $mail->booking->status === BookingStatus::Accepted,
+                && $mail->booking->status === BookingStatus::Accepted
+                && $mail->queue === 'emails',
         );
     }
 

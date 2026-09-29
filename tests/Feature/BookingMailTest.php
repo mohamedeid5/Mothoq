@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\BookingStatus;
+use App\Mail\BookingCreatedConfirmation;
 use App\Mail\BookingStatusUpdated;
 use App\Mail\NewBookingReceived;
 use App\Models\Booking;
@@ -12,6 +13,23 @@ use Tests\TestCase;
 class BookingMailTest extends TestCase
 {
     use LazilyRefreshDatabase;
+
+    public function test_booking_created_confirmation_email_contains_booking_details(): void
+    {
+        $booking = Booking::factory()->create([
+            'customer_phone' => '01012345678',
+            'notes' => 'فحص صوت المحرك.',
+        ])->load(['customer', 'serviceCenter', 'service']);
+        $mailable = new BookingCreatedConfirmation($booking);
+
+        $mailable
+            ->assertHasSubject("تم استلام طلب حجزك لدى {$booking->serviceCenter->name}")
+            ->assertSeeInHtml($booking->customer->name)
+            ->assertSeeInHtml($booking->serviceCenter->name)
+            ->assertSeeInHtml($booking->service->name)
+            ->assertSeeInHtml('01012345678')
+            ->assertSeeInHtml('فحص صوت المحرك.');
+    }
 
     public function test_new_booking_email_contains_booking_details(): void
     {

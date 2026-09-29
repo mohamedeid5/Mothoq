@@ -4,6 +4,7 @@ namespace App\Actions\Bookings;
 
 use App\Data\Bookings\CreateBookingData;
 use App\Enums\BookingStatus;
+use App\Mail\BookingCreatedConfirmation;
 use App\Mail\NewBookingReceived;
 use App\Models\Booking;
 use App\Models\ServiceCenter;
@@ -57,6 +58,8 @@ final class CreateBookingAction
 
             return $booking->load($this->relations());
         });
+
+        Mail::to($booking->customer)->send(new BookingCreatedConfirmation($booking));
 
         $owner = $booking->serviceCenter->owner;
 

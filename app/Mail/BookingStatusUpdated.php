@@ -15,9 +15,18 @@ class BookingStatusUpdated extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    public int $tries = 3;
+
     public function __construct(public Booking $booking)
     {
+        $this->onQueue('emails');
         $this->afterCommit();
+    }
+
+    /** @return list<int> */
+    public function backoff(): array
+    {
+        return [60, 300];
     }
 
     /**

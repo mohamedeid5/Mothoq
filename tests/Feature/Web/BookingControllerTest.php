@@ -3,6 +3,7 @@
 namespace Tests\Feature\Web;
 
 use App\Enums\BookingStatus;
+use App\Mail\BookingCreatedConfirmation;
 use App\Mail\NewBookingReceived;
 use App\Models\Booking;
 use App\Models\Service;
@@ -60,7 +61,14 @@ class BookingControllerTest extends TestCase
         Mail::assertQueued(
             NewBookingReceived::class,
             fn (NewBookingReceived $mail): bool => $mail->hasTo($serviceCenter->owner->email)
-                && $mail->booking->service_center_id === $serviceCenter->id,
+                && $mail->booking->service_center_id === $serviceCenter->id
+                && $mail->queue === 'emails',
+        );
+        Mail::assertQueued(
+            BookingCreatedConfirmation::class,
+            fn (BookingCreatedConfirmation $mail): bool => $mail->hasTo($customer->email)
+                && $mail->booking->service_center_id === $serviceCenter->id
+                && $mail->queue === 'emails',
         );
     }
 

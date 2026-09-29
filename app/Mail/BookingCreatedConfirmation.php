@@ -6,11 +6,12 @@ use App\Models\Booking;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class NewBookingReceived extends Mailable implements ShouldQueue
+class BookingCreatedConfirmation extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -34,7 +35,7 @@ class NewBookingReceived extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "حجز جديد في {$this->booking->serviceCenter->name}",
+            subject: "تم استلام طلب حجزك لدى {$this->booking->serviceCenter->name}",
         );
     }
 
@@ -44,7 +45,7 @@ class NewBookingReceived extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.bookings.new-booking-received',
+            markdown: 'mail.bookings.booking-created-confirmation',
         );
     }
 
