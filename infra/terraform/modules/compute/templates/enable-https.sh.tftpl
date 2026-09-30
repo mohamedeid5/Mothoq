@@ -16,17 +16,36 @@ certbot certonly --non-interactive --agree-tos --register-unsafely-without-email
   --cert-name mothoq-origin --key-type rsa --rsa-key-size 2048 \
   --keep-until-expiring -d 'origin.${domain_name}'
 
-cat > /opt/mothoq/tls/origin.conf <<'NGINX'
-listen 443 ssl;
-ssl_certificate /etc/letsencrypt/live/mothoq-origin/fullchain.pem;
-ssl_certificate_key /etc/letsencrypt/live/mothoq-origin/privkey.pem;
-ssl_protocols TLSv1.2 TLSv1.3;
-ssl_session_cache shared:OriginTLS:10m;
-ssl_session_timeout 1d;
-ssl_session_tickets off;
+cat > /opt/mothoq/tls/servers.conf <<'NGINX'
+server {
+    listen 80;
+    server_name origin.${domain_name};
+    server_tokens off;
 
-if ($mothoq_redirect_origin_https) {
-    return 308 https://origin.${domain_name}$request_uri;
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/acme;
+        default_type text/plain;
+        try_files $uri =404;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl default_server;
+    server_name origin.${domain_name};
+    server_tokens off;
+
+    ssl_certificate /etc/letsencrypt/live/mothoq-origin/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mothoq-origin/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:OriginTLS:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    include /etc/nginx/application.conf;
 }
 NGINX
 
