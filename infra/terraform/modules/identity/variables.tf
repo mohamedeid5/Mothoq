@@ -43,6 +43,16 @@ variable "log_group_arn" {
   type        = string
 }
 
+variable "alert_topic_arn" {
+  description = "ARN of the SNS topic used for production alerts."
+  type        = string
+}
+
+variable "alarm_arn_prefix" {
+  description = "ARN prefix for CloudWatch alarms managed by this project."
+  type        = string
+}
+
 variable "environment_parameter_arn" {
   description = "ARN of the SSM parameter containing the production environment."
   type        = string

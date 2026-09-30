@@ -10,6 +10,8 @@ module "identity" {
   app_repository_arn        = local.app_repository_arn
   nginx_repository_arn      = local.nginx_repository_arn
   log_group_arn             = local.log_group_arn
+  alert_topic_arn           = local.alert_topic_arn
+  alarm_arn_prefix          = local.alarm_arn_prefix
   environment_parameter_arn = local.environment_parameter_arn
   github_oidc_subject       = local.github_oidc_subject
   ses_from_address          = "noreply@${var.domain_name}"
@@ -34,9 +36,11 @@ module "storage" {
 module "observability" {
   source = "./modules/observability"
 
-  project_name      = var.project_name
-  environment       = var.environment
-  retention_in_days = var.log_retention_days
+  project_name        = var.project_name
+  environment         = var.environment
+  retention_in_days   = var.log_retention_days
+  alert_email         = var.alert_email
+  nginx_5xx_threshold = var.nginx_5xx_alarm_threshold
 
   depends_on = [module.identity]
 }

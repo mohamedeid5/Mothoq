@@ -33,6 +33,16 @@ output "cloudwatch_log_group_name" {
   value       = module.observability.log_group_name
 }
 
+output "alerts_topic_arn" {
+  description = "SNS topic that receives production CloudWatch alarms."
+  value       = module.observability.alerts_topic_arn
+}
+
+output "nginx_5xx_alarm_name" {
+  description = "CloudWatch alarm monitoring Nginx 5xx responses."
+  value       = module.observability.nginx_5xx_alarm_name
+}
+
 output "production_env_parameter" {
   description = "Create this SecureString parameter separately so its secret never enters Terraform state."
   value       = local.parameter_path

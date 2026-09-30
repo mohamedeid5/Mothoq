@@ -48,7 +48,9 @@ resource "aws_iam_policy" "terraform_operator" {
           "logs:CreateLogGroup",
           "logs:DeleteLogGroup",
           "logs:DeleteRetentionPolicy",
+          "logs:DeleteMetricFilter",
           "logs:ListTagsForResource",
+          "logs:PutMetricFilter",
           "logs:PutRetentionPolicy",
           "logs:TagResource",
           "logs:UntagResource",
@@ -59,9 +61,53 @@ resource "aws_iam_policy" "terraform_operator" {
         ]
       },
       {
-        Sid      = "ReadLogGroups"
+        Sid    = "ReadApplicationLogs"
+        Effect = "Allow"
+        Action = [
+          "logs:DescribeLogGroups",
+          "logs:DescribeMetricFilters",
+          "logs:TestMetricFilter",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ManageMothoqAlarms"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:ListTagsForResource",
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:TagResource",
+          "cloudwatch:UntagResource",
+        ]
+        Resource = "${var.alarm_arn_prefix}*"
+      },
+      {
+        Sid    = "ManageMothoqAlertTopic"
+        Effect = "Allow"
+        Action = [
+          "sns:CreateTopic",
+          "sns:DeleteTopic",
+          "sns:GetSubscriptionAttributes",
+          "sns:GetTopicAttributes",
+          "sns:ListSubscriptionsByTopic",
+          "sns:ListTagsForResource",
+          "sns:SetTopicAttributes",
+          "sns:Subscribe",
+          "sns:TagResource",
+          "sns:Unsubscribe",
+          "sns:UntagResource",
+        ]
+        Resource = [
+          var.alert_topic_arn,
+          "${var.alert_topic_arn}:*",
+        ]
+      },
+      {
+        Sid      = "ListSnsTopics"
         Effect   = "Allow"
-        Action   = "logs:DescribeLogGroups"
+        Action   = "sns:ListTopics"
         Resource = "*"
       },
       {

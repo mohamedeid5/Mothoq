@@ -58,6 +58,29 @@ variable "log_retention_days" {
   }
 }
 
+variable "alert_email" {
+  description = "Email address subscribed to production infrastructure alerts."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.alert_email == null || can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.alert_email))
+    error_message = "Set alert_email to a valid email address or null."
+  }
+}
+
+variable "nginx_5xx_alarm_threshold" {
+  description = "Number of Nginx 5xx responses within five minutes that triggers an alarm."
+  type        = number
+  default     = 5
+
+  validation {
+    condition     = var.nginx_5xx_alarm_threshold >= 1 && floor(var.nginx_5xx_alarm_threshold) == var.nginx_5xx_alarm_threshold
+    error_message = "nginx_5xx_alarm_threshold must be a positive whole number."
+  }
+}
+
 variable "allowed_http_cidrs" {
   description = "IPv4 networks allowed to reach the public HTTP endpoint."
   type        = list(string)

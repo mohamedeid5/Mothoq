@@ -12,3 +12,14 @@ variable "retention_in_days" {
   description = "Number of days CloudWatch retains application logs."
   type        = number
 }
+
+variable "alert_email" {
+  description = "Optional email address subscribed to production alerts."
+  type        = string
+  nullable    = true
+}
+
+variable "nginx_5xx_threshold" {
+  description = "Number of Nginx 5xx responses within five minutes that triggers the alarm."
+  type        = number
+}
