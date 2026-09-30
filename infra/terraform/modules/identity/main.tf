@@ -78,6 +78,7 @@ resource "aws_iam_policy" "terraform_operator" {
           "cloudwatch:DescribeAlarms",
           "cloudwatch:ListTagsForResource",
           "cloudwatch:PutMetricAlarm",
+          "cloudwatch:SetAlarmState",
           "cloudwatch:TagResource",
           "cloudwatch:UntagResource",
         ]
