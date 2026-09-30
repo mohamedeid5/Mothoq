@@ -24,6 +24,10 @@ ssl_protocols TLSv1.2 TLSv1.3;
 ssl_session_cache shared:OriginTLS:10m;
 ssl_session_timeout 1d;
 ssl_session_tickets off;
+
+if ($mothoq_redirect_origin_https) {
+    return 308 https://origin.${domain_name}$request_uri;
+}
 NGINX
 
 docker exec mothoq-nginx-1 nginx -t

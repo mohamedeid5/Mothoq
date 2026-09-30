@@ -67,6 +67,14 @@ resource "aws_security_group" "web" {
   }
 
   ingress {
+    description = "Public HTTPS for the origin"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = var.allowed_http_cidrs
+  }
+
+  ingress {
     description     = "HTTPS from CloudFront"
     from_port       = 443
     to_port         = 443
