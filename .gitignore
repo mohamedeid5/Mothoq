@@ -27,6 +27,8 @@ infra/terraform/*.tfplan
 infra/terraform/*.tfstate
 infra/terraform/*.tfstate.*
 infra/terraform/terraform.tfvars
+infra/render-deployment/.terraform/
+infra/render-deployment/*.tfstate*
 _ide_helper.php
 Homestead.json
 Homestead.yaml

@@ -11,6 +11,22 @@ permissions:
   contents: read
 
 jobs:
+  deployment-config:
+    name: Deployment configuration checks
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v6
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.0"
+          terraform_wrapper: false
+
+      - name: Check rendered deployment configuration
+        run: bash infra/render-deployment/check.sh
+
   php:
     name: PHP quality and tests
     runs-on: ubuntu-24.04
@@ -89,6 +105,7 @@ jobs:
     name: Deploy production
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs:
+      - deployment-config
       - php
       - frontend
       - containers
@@ -106,6 +123,9 @@ jobs:
       APP_REPOSITORY: mothoq/app
       NGINX_REPOSITORY: mothoq/nginx
       IMAGE_TAG: ${{ github.sha }}
+      TF_VAR_image_tag: ${{ github.sha }}
+      TF_VAR_aws_account_id: "769429582541"
+      TF_VAR_aws_region: eu-north-1
 
     steps:
       - name: Check out the repository
@@ -165,6 +185,21 @@ jobs:
 
           echo "instance_id=$instance_id" >> "$GITHUB_OUTPUT"
 
+      - name: Set up Terraform for deployment templates
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.0"
+          terraform_wrapper: false
+
+      - name: Render deployment files from this commit
+        run: |
+          terraform -chdir=infra/render-deployment init -backend=false -input=false
+          terraform -chdir=infra/render-deployment validate
+          printf '%s\n' 'jsonencode(local.ssm_parameters)' \
+            | terraform -chdir=infra/render-deployment console \
+            | jq -er . > "$RUNNER_TEMP/mothoq-deployment.json"
+          jq -e '.commands | length > 0' "$RUNNER_TEMP/mothoq-deployment.json" >/dev/null
+
       - name: Deploy through SSM
         env:
           INSTANCE_ID: ${{ steps.instance.outputs.instance_id }}
@@ -175,7 +210,7 @@ jobs:
             --document-name AWS-RunShellScript \
             --comment "Deploy Git commit $IMAGE_TAG" \
             --timeout-seconds 900 \
-            --parameters "commands=[\"IMAGE_TAG=$IMAGE_TAG /usr/local/bin/mothoq-deploy\"]" \
+            --parameters "file://$RUNNER_TEMP/mothoq-deployment.json" \
             --query 'Command.CommandId' \
             --output text)"
 

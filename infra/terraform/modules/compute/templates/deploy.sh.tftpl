@@ -4,10 +4,32 @@ set -Eeuo pipefail
 cd /opt/mothoq
 umask 077
 
-printf '%s' '${nginx_config_base64}' | base64 --decode > /opt/mothoq/nginx-origin.conf
+exec 9>/opt/mothoq/deploy.lock
+flock -n 9 || { echo 'Another deployment is running.' >&2; exit 1; }
+
+release_directory="$${1:-}"
+compose_candidate=/opt/mothoq/compose.yaml
+if [[ -n "$release_directory" ]]; then
+  compose_candidate="$release_directory/compose.yaml"
+  bash -n "$release_directory/deploy.sh"
+  bash -n "$release_directory/enable-https.sh"
+fi
+
+stopped_writers=()
+migration_directories=()
+cleanup() {
+  deployment_exit_code=$?
+  if (( deployment_exit_code != 0 )); then
+    echo 'Deployment failed. Previous configuration and existing volumes have been preserved; database migrations are not automatically rolled back.' >&2
+    for container_id in "$${stopped_writers[@]}"; do
+      docker start "$container_id" >/dev/null || true
+    done
+  fi
+  docker logout '${registry_host}' >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
 
 temporary_environment="$(mktemp /opt/mothoq/.env.production.XXXXXX)"
-trap 'rm -f "$temporary_environment"' EXIT
 
 aws ssm get-parameter \
   --name '${parameter_name}' \
@@ -17,17 +39,68 @@ aws ssm get-parameter \
   --output text > "$temporary_environment"
 
 mv "$temporary_environment" .env.production
-trap - EXIT
 
 aws ecr get-login-password --region '${aws_region}' \
   | docker login --username AWS --password-stdin '${registry_host}'
-trap 'docker logout "${registry_host}" >/dev/null 2>&1 || true' EXIT
+docker compose --project-directory /opt/mothoq --env-file .env.production -f "$compose_candidate" config --quiet
+docker compose --project-directory /opt/mothoq --env-file .env.production -f "$compose_candidate" pull
 
-docker compose --env-file .env.production pull
+# Preserve container-local uploads before adopting shared storage for the first time.
+for service in horizon scheduler app; do
+  container_id="$(docker ps -aq --filter label=com.docker.compose.project=mothoq --filter label=com.docker.compose.service="$service")"
+  if [[ -n "$container_id" ]] && ! docker inspect "$container_id" --format '{{range .Mounts}}{{println .Destination}}{{end}}' | grep -qx /var/www/html/storage/app/public; then
+    if [[ "$(docker inspect "$container_id" --format '{{.State.Running}}')" == true ]]; then
+      stopped_writers+=("$container_id")
+      docker stop --timeout 120 "$container_id" >/dev/null
+    fi
+    inspection_directory="$(mktemp -d /opt/mothoq/uploads-preflight.XXXXXX)"
+    docker cp "$container_id:/var/www/html/storage/app/." "$inspection_directory/"
+    if [[ -n "$(find "$inspection_directory" -path "$inspection_directory/public" -prune -o -type f ! -name .gitignore -print -quit)" ]]; then
+      echo "Private files need a separate storage migration. Preserved copy: $inspection_directory" >&2
+      exit 1
+    fi
+    if [[ -n "$(find "$inspection_directory/public" -type l -print -quit)" ]]; then
+      echo "Review upload symlinks before migration. Preserved copy: $inspection_directory" >&2
+      exit 1
+    fi
+    migration_directories+=("$inspection_directory")
+  fi
+done
+
+for inspection_directory in "$${migration_directories[@]}"; do
+  docker compose --project-directory /opt/mothoq --env-file .env.production -f "$compose_candidate" \
+    run --rm --no-deps --user root --entrypoint sh \
+    --volume "$inspection_directory/public:/source:ro" app /var/www/html/docker/migrate-uploads.sh
+done
+
+if [[ -n "$release_directory" ]]; then
+  cp -p compose.yaml "$release_directory/compose.previous.yaml"
+  cp -p /usr/local/bin/mothoq-deploy "$release_directory/deploy.previous.sh"
+  cp -p /usr/local/bin/mothoq-enable-https "$release_directory/enable-https.previous.sh"
+  install -m 0640 "$compose_candidate" /opt/mothoq/compose.next.yaml
+  mv /opt/mothoq/compose.next.yaml /opt/mothoq/compose.yaml
+  install -m 0750 "$release_directory/enable-https.sh" /usr/local/bin/mothoq-enable-https
+fi
+
+printf '%s' '${nginx_config_base64}' | base64 --decode > /opt/mothoq/nginx-origin.conf
+
+# Initialize permissions using the application's actual runtime user.
+docker compose --env-file .env.production run --rm --no-deps --user root --entrypoint sh app \
+  -c 'chown www-data:www-data /var/www/html/storage/app/public; chmod 755 /var/www/html/storage/app/public'
 docker compose --env-file .env.production run --rm app php artisan migrate --force
-docker compose --env-file .env.production up --detach --remove-orphans
+docker compose --env-file .env.production up --detach --remove-orphans --wait --wait-timeout 180
 curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors http://127.0.0.1/up >/dev/null
 /usr/local/bin/mothoq-enable-https
+
+for service in app horizon scheduler nginx; do
+  container_id="$(docker compose --env-file .env.production ps -q "$service")"
+  docker inspect "$container_id" --format '{{range .Mounts}}{{if eq .Destination "/var/www/html/storage/app/public"}}{{println .Name}}{{end}}{{end}}' \
+    | grep -qx mothoq_storage_data
+done
+
+if [[ -n "$release_directory" ]]; then
+  install -m 0750 "$release_directory/deploy.sh" /usr/local/bin/mothoq-deploy
+fi
 docker image prune --force
 
 curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors http://127.0.0.1/up
