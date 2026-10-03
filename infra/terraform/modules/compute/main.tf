@@ -23,18 +23,8 @@ resource "aws_instance" "app" {
     tls_script_base64 = base64encode(templatefile("${path.module}/templates/enable-https.sh.tftpl", {
       domain_name = var.domain_name
     }))
-    compose_file_base64 = base64encode(templatefile("${path.module}/templates/compose.ec2.yaml.tftpl", {
-      app_repository   = var.app_repository_url
-      nginx_repository = var.nginx_repository_url
-      aws_region       = var.aws_region
-      log_group_name   = var.log_group_name
-    }))
-    deploy_script_base64 = base64encode(templatefile("${path.module}/templates/deploy.sh.tftpl", {
-      aws_region          = var.aws_region
-      parameter_name      = var.environment_parameter_path
-      registry_host       = split("/", var.app_repository_url)[0]
-      nginx_config_base64 = base64encode(file("${path.module}/../../../../docker/nginx/default.prod.conf"))
-    }))
+    compose_file_base64  = base64encode(file("${path.module}/../../../../docker/compose.ec2.yaml"))
+    deploy_script_base64 = base64encode(file("${path.module}/../../../../docker/deploy.sh"))
   })
 
   root_block_device {

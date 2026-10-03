@@ -18,14 +18,18 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v6
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.16.0"
-          terraform_wrapper: false
-
-      - name: Check rendered deployment configuration
-        run: bash infra/render-deployment/check.sh
+      - name: Check deployment configuration
+        env:
+          APP_IMAGE: mothoq-app:test
+          NGINX_IMAGE: mothoq-nginx:test
+          AWS_REGION: eu-north-1
+          DB_DATABASE: mothoq
+          DB_USERNAME: mothoq
+          DB_PASSWORD: test-only
+          DB_ROOT_PASSWORD: test-only
+        run: |
+          bash -n docker/deploy.sh
+          docker compose -f docker/compose.ec2.yaml config --no-env-resolution --quiet
 
   php:
     name: PHP quality and tests
@@ -123,9 +127,6 @@ jobs:
       APP_REPOSITORY: mothoq/app
       NGINX_REPOSITORY: mothoq/nginx
       IMAGE_TAG: ${{ github.sha }}
-      TF_VAR_image_tag: ${{ github.sha }}
-      TF_VAR_aws_account_id: "769429582541"
-      TF_VAR_aws_region: eu-north-1
 
     steps:
       - name: Check out the repository
@@ -185,20 +186,22 @@ jobs:
 
           echo "instance_id=$instance_id" >> "$GITHUB_OUTPUT"
 
-      - name: Set up Terraform for deployment templates
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.16.0"
-          terraform_wrapper: false
-
-      - name: Render deployment files from this commit
+      - name: Prepare deployment files for SSM
         run: |
-          terraform -chdir=infra/render-deployment init -backend=false -input=false
-          terraform -chdir=infra/render-deployment validate
-          printf '%s\n' 'jsonencode(local.ssm_parameters)' \
-            | terraform -chdir=infra/render-deployment console \
-            | jq -er . > "$RUNNER_TEMP/mothoq-deployment.json"
-          jq -e '.commands | length > 0' "$RUNNER_TEMP/mothoq-deployment.json" >/dev/null
+          bundle="$(tar -czf - -C docker compose.ec2.yaml deploy.sh | base64 | tr -d '\n')"
+          registry="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+          jq -n --arg bundle "$bundle" --arg region "$AWS_REGION" \
+            --arg registry "$registry" --arg tag "$IMAGE_TAG" '{
+              executionTimeout: ["900"],
+              commands: [
+                "set -eu",
+                "umask 077",
+                "mkdir -p /opt/mothoq/incoming",
+                ("printf %s " + ($bundle | @sh) + " | base64 --decode | tar -xz -C /opt/mothoq/incoming"),
+                ("bash /opt/mothoq/incoming/deploy.sh " +
+                  ([$region, $registry, $tag, "/opt/mothoq/incoming/compose.ec2.yaml"] | map(@sh) | join(" ")))
+              ]
+            }' > "$RUNNER_TEMP/mothoq-deployment.json"
 
       - name: Deploy through SSM
         env:

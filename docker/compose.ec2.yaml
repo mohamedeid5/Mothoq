@@ -1,7 +1,7 @@
 name: mothoq
 
 x-app: &app
-  image: ${app_repository}:$${IMAGE_TAG:?Set IMAGE_TAG in .env.production}
+  image: ${APP_IMAGE:?Set APP_IMAGE}
   env_file:
     - path: .env.production
       required: true
@@ -16,8 +16,8 @@ x-app: &app
   logging: &logging
     driver: awslogs
     options:
-      awslogs-region: ${aws_region}
-      awslogs-group: ${log_group_name}
+      awslogs-region: ${AWS_REGION:?Set AWS_REGION}
+      awslogs-group: /mothoq/production
       awslogs-create-group: "false"
       tag: "{{.Name}}/{{.ID}}"
 
@@ -32,7 +32,7 @@ services:
       start_period: 20s
 
   nginx:
-    image: ${nginx_repository}:$${IMAGE_TAG:?Set IMAGE_TAG in .env.production}
+    image: ${NGINX_IMAGE:?Set NGINX_IMAGE}
     ports:
       - "80:80"
       - "443:443"
@@ -66,10 +66,10 @@ services:
   mysql:
     image: mysql:8.4
     environment:
-      MYSQL_DATABASE: $${DB_DATABASE:?Set DB_DATABASE in .env.production}
-      MYSQL_USER: $${DB_USERNAME:?Set DB_USERNAME in .env.production}
-      MYSQL_PASSWORD: $${DB_PASSWORD:?Set DB_PASSWORD in .env.production}
-      MYSQL_ROOT_PASSWORD: $${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env.production}
+      MYSQL_DATABASE: ${DB_DATABASE:?Set DB_DATABASE in .env.production}
+      MYSQL_USER: ${DB_USERNAME:?Set DB_USERNAME in .env.production}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.production}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env.production}
     command:
       - --innodb-buffer-pool-size=128M
       - --max-connections=50
