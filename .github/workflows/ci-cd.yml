@@ -29,7 +29,8 @@ jobs:
           DB_ROOT_PASSWORD: test-only
         run: |
           bash -n docker/deploy.sh
-          docker compose -f docker/compose.ec2.yaml config --no-env-resolution --quiet
+          touch docker/.env.production
+          docker compose -f docker/compose.ec2.yaml config --quiet
 
   php:
     name: PHP quality and tests
