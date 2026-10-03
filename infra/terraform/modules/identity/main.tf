@@ -82,7 +82,10 @@ resource "aws_iam_policy" "terraform_operator" {
           "cloudwatch:TagResource",
           "cloudwatch:UntagResource",
         ]
-        Resource = "${var.alarm_arn_prefix}*"
+        Resource = [
+          "${var.alarm_arn_prefix}*",
+          "arn:aws:cloudwatch:us-east-1:${var.aws_account_id}:alarm:${var.name}-uptime",
+        ]
       },
       {
         Sid    = "ManageMothoqAlertTopic"
@@ -103,6 +106,8 @@ resource "aws_iam_policy" "terraform_operator" {
         Resource = [
           var.alert_topic_arn,
           "${var.alert_topic_arn}:*",
+          "arn:aws:sns:us-east-1:${var.aws_account_id}:${var.name}-uptime-alerts",
+          "arn:aws:sns:us-east-1:${var.aws_account_id}:${var.name}-uptime-alerts:*",
         ]
       },
       {

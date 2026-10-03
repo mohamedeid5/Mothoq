@@ -43,6 +43,21 @@ output "nginx_5xx_alarm_name" {
   value       = module.observability.nginx_5xx_alarm_name
 }
 
+output "uptime_health_check_id" {
+  description = "Route 53 health check monitoring the public HTTPS /up endpoint."
+  value       = aws_route53_health_check.application.id
+}
+
+output "uptime_alarm_name" {
+  description = "Uptime CloudWatch alarm in us-east-1."
+  value       = aws_cloudwatch_metric_alarm.uptime.alarm_name
+}
+
+output "uptime_alerts_topic_arn" {
+  description = "SNS topic in us-east-1; its email subscription requires confirmation."
+  value       = aws_sns_topic.uptime_alerts.arn
+}
+
 output "production_env_parameter" {
   description = "Create this SecureString parameter separately so its secret never enters Terraform state."
   value       = local.parameter_path
