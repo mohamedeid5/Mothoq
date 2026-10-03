@@ -77,3 +77,23 @@ output "ses_identity_arn" {
   description = "Verified SES identity used for transactional email."
   value       = aws_ses_domain_identity.application.arn
 }
+
+output "ses_configuration_set_name" {
+  description = "Configuration set Laravel should select when sending SES email."
+  value       = aws_sesv2_configuration_set.application.configuration_set_name
+}
+
+output "ses_events_topic_arn" {
+  description = "SNS topic receiving SES delivery and feedback events."
+  value       = aws_sns_topic.ses_events.arn
+}
+
+output "ses_events_queue_url" {
+  description = "SQS queue URL for the SES event consumer."
+  value       = aws_sqs_queue.ses_events.url
+}
+
+output "ses_events_queue_arn" {
+  description = "SQS queue ARN for scoped consumer permissions."
+  value       = aws_sqs_queue.ses_events.arn
+}

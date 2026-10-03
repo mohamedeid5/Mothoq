@@ -156,6 +156,101 @@ resource "aws_ses_domain_identity" "application" {
   domain = var.domain_name
 }
 
+resource "aws_sesv2_configuration_set" "application" {
+  configuration_set_name = local.name
+
+  reputation_options {
+    reputation_metrics_enabled = true
+  }
+}
+
+resource "aws_sns_topic" "ses_events" {
+  name       = "${var.project_name}-ses-events"
+  fifo_topic = false
+}
+
+resource "aws_sns_topic_policy" "ses_events" {
+  arn = aws_sns_topic.ses_events.arn
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "AllowSesConfigurationSet"
+      Effect    = "Allow"
+      Principal = { Service = "ses.amazonaws.com" }
+      Action    = "sns:Publish"
+      Resource  = aws_sns_topic.ses_events.arn
+      Condition = {
+        StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
+        ArnEquals    = { "aws:SourceArn" = aws_sesv2_configuration_set.application.arn }
+      }
+    }]
+  })
+}
+
+resource "aws_sqs_queue" "ses_events" {
+  name                      = "${var.project_name}-ses-events-queue"
+  fifo_queue                = false
+  sqs_managed_sse_enabled   = true
+  max_message_size          = 1048576
+  message_retention_seconds = 345600
+}
+
+resource "aws_sqs_queue_policy" "ses_events" {
+  queue_url = aws_sqs_queue.ses_events.url
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowSesEventsTopic"
+        Effect    = "Allow"
+        Principal = { Service = "sns.amazonaws.com" }
+        Action    = "sqs:SendMessage"
+        Resource  = aws_sqs_queue.ses_events.arn
+        Condition = {
+          ArnEquals = { "aws:SourceArn" = aws_sns_topic.ses_events.arn }
+        }
+      },
+      {
+        Sid       = "DenyOtherMessageSources"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "sqs:SendMessage"
+        Resource  = aws_sqs_queue.ses_events.arn
+        Condition = {
+          ArnNotEquals = { "aws:SourceArn" = aws_sns_topic.ses_events.arn }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_sns_topic_subscription" "ses_events" {
+  topic_arn            = aws_sns_topic.ses_events.arn
+  protocol             = "sqs"
+  endpoint             = aws_sqs_queue.ses_events.arn
+  raw_message_delivery = true
+
+  depends_on = [aws_sqs_queue_policy.ses_events]
+}
+
+resource "aws_sesv2_configuration_set_event_destination" "ses_events" {
+  configuration_set_name = aws_sesv2_configuration_set.application.configuration_set_name
+  event_destination_name = aws_sns_topic.ses_events.name
+
+  event_destination {
+    enabled              = true
+    matching_event_types = ["DELIVERY", "BOUNCE", "COMPLAINT", "REJECT", "DELIVERY_DELAY"]
+
+    sns_destination {
+      topic_arn = aws_sns_topic.ses_events.arn
+    }
+  }
+
+  depends_on = [aws_sns_topic_policy.ses_events, aws_sns_topic_subscription.ses_events]
+}
+
 resource "aws_route53_record" "ses_verification" {
   zone_id = data.aws_route53_zone.application.zone_id
   name    = "_amazonses.${var.domain_name}"
