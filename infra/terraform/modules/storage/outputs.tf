@@ -17,3 +17,13 @@ output "nginx_repository_url" {
   description = "URL of the Nginx ECR repository."
   value       = aws_ecr_repository.nginx.repository_url
 }
+
+output "uploads_bucket_name" {
+  description = "Private bucket name for future Laravel S3 configuration."
+  value       = aws_s3_bucket.uploads.id
+}
+
+output "uploads_bucket_arn" {
+  description = "ARN of the private application uploads bucket."
+  value       = aws_s3_bucket.uploads.arn
+}

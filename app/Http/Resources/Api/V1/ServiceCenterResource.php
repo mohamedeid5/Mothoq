@@ -23,6 +23,7 @@ class ServiceCenterResource extends ServiceCenterSummaryResource
             'images' => $this->images->map(fn (CenterImage $image): array => [
                 'id' => $image->id,
                 'path' => $image->path,
+                'url' => $image->url(),
                 'alt_text' => $image->alt_text,
                 'is_cover' => $image->is_cover,
                 'sort_order' => $image->sort_order,

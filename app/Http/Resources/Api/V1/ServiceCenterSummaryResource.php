@@ -56,6 +56,7 @@ class ServiceCenterSummaryResource extends JsonResource
             ])->values(),
             'cover_image' => $this->coverImage === null ? null : [
                 'path' => $this->coverImage->path,
+                'url' => $this->coverImage->url(),
                 'alt_text' => $this->coverImage->alt_text,
             ],
             'rating' => [

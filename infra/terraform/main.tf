@@ -29,6 +29,8 @@ module "storage" {
 
   project_name              = var.project_name
   force_delete_repositories = var.force_delete_repositories
+  uploads_bucket_name       = "${local.name}-uploads-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+  instance_role_name        = module.identity.instance_role_name
 
   depends_on = [module.identity]
 }

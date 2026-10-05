@@ -5,16 +5,19 @@ namespace App\Actions\ServiceCenters;
 use App\Models\CenterImage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 final class DeleteCenterImageAction
 {
     public function handle(CenterImage $centerImage): void
     {
-        $path = DB::transaction(function () use ($centerImage): string {
+        DB::transaction(function () use ($centerImage): void {
             $serviceCenter = $centerImage->serviceCenter;
             $wasCover = $centerImage->is_cover;
-            $path = $centerImage->path;
 
+            if (! Storage::disk($centerImage->disk)->delete($centerImage->path)) {
+                throw new RuntimeException('The service center image could not be deleted.');
+            }
             $centerImage->delete();
 
             if ($wasCover) {
@@ -25,9 +28,6 @@ final class DeleteCenterImageAction
                     ?->update(['is_cover' => true]);
             }
 
-            return $path;
         });
-
-        Storage::disk('public')->delete($path);
     }
 }

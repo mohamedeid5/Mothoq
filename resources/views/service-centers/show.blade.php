@@ -21,7 +21,7 @@
                     <div class="relative min-h-80 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#d9eee7] to-[#cbd9d5] sm:min-h-105">
                         <div class="absolute inset-0 grid place-items-center text-brand-800/55"><svg viewBox="0 0 180 100" class="w-52 sm:w-72" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M25 70V45l14-25h80l25 25v25M12 70h156M42 70a14 14 0 1 0 28 0M111 70a14 14 0 1 0 28 0M44 33h72M79 21v27M68 10h34v11H68z" /></svg></div>
                         @if ($serviceCenter->coverImage)
-                            <img src="{{ Storage::url($serviceCenter->coverImage->path) }}" alt="{{ $serviceCenter->coverImage->alt_text ?: $serviceCenter->name }}" class="absolute inset-0 h-full w-full object-cover" onerror="this.remove()">
+                            <img src="{{ $serviceCenter->coverImage->url() }}" alt="{{ $serviceCenter->coverImage->alt_text ?: $serviceCenter->name }}" class="absolute inset-0 h-full w-full object-cover" onerror="this.remove()">
                         @endif
                         <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink-950/90 via-ink-950/40 to-transparent px-6 pt-24 pb-6 text-white sm:px-8 sm:pb-8">
                             <div class="mb-3 flex flex-wrap gap-2">
@@ -36,7 +36,7 @@
                     @if ($serviceCenter->images->count() > 1)
                         <section class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3" aria-label="صور مركز الصيانة">
                             @foreach ($serviceCenter->images as $centerImage)
-                                <img src="{{ Storage::disk('public')->url($centerImage->path) }}" alt="{{ $centerImage->alt_text ?: $serviceCenter->name }}" class="aspect-video w-full rounded-2xl border border-[#e0e8e5] object-cover" loading="lazy">
+                                <img src="{{ $centerImage->url() }}" alt="{{ $centerImage->alt_text ?: $serviceCenter->name }}" class="aspect-video w-full rounded-2xl border border-[#e0e8e5] object-cover" loading="lazy">
                             @endforeach
                         </section>
                     @endif

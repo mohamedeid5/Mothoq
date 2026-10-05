@@ -33,7 +33,7 @@
             @foreach ($serviceCenter->images as $centerImage)
                 <article class="overflow-hidden rounded-2xl border border-slate-200">
                     <div class="relative aspect-video bg-slate-100">
-                        <img src="{{ Storage::disk('public')->url($centerImage->path) }}" alt="{{ $centerImage->alt_text ?: $serviceCenter->name }}" class="h-full w-full object-cover">
+                        <img src="{{ $centerImage->url() }}" alt="{{ $centerImage->alt_text ?: $serviceCenter->name }}" class="h-full w-full object-cover">
                         @if ($centerImage->is_cover)<span class="absolute right-3 top-3 rounded-full bg-brand-600 px-3 py-1 text-xs font-black text-white">صورة الغلاف</span>@endif
                     </div>
                     <div class="grid gap-3 p-4">
@@ -72,7 +72,7 @@
                     @foreach ($serviceCenter->images as $index => $centerImage)
                         <label class="flex items-center gap-3 rounded-xl bg-slate-50 p-3 text-sm font-bold text-slate-700">
                             <input type="hidden" name="images[{{ $index }}][id]" value="{{ $centerImage->id }}">
-                            <img src="{{ Storage::disk('public')->url($centerImage->path) }}" alt="" class="size-12 rounded-lg object-cover">
+                            <img src="{{ $centerImage->url() }}" alt="" class="size-12 rounded-lg object-cover">
                             <span class="min-w-0 flex-1 truncate">{{ $centerImage->alt_text ?: 'صورة بدون وصف' }}</span>
                             <input type="number" name="images[{{ $index }}][sort_order]" value="{{ $centerImage->sort_order }}" min="0" max="9" required class="h-10 w-16 rounded-lg border border-slate-200 bg-white px-2 text-center">
                         </label>

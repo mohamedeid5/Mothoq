@@ -6,7 +6,7 @@
             <svg viewBox="0 0 120 70" class="w-32" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 48V32l9-16h55l16 16v16M10 48h100M28 48a9 9 0 1 0 18 0M76 48a9 9 0 1 0 18 0M31 25h47M57 17v15" /><path d="M51 7h18v10H51zM57 7V2h6v5" /></svg>
         </div>
         @if ($center->coverImage)
-            <img src="{{ Storage::url($center->coverImage->path) }}" alt="{{ $center->coverImage->alt_text ?: $center->name }}" class="relative h-full w-full object-cover transition duration-500 group-hover:scale-105" onerror="this.remove()">
+            <img src="{{ $center->coverImage->url() }}" alt="{{ $center->coverImage->alt_text ?: $center->name }}" class="relative h-full w-full object-cover transition duration-500 group-hover:scale-105" onerror="this.remove()">
         @endif
         <div class="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-ink-950/65 to-transparent"></div>
         @if ($center->verified_at)

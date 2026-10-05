@@ -95,7 +95,7 @@ final class PublicServiceCenterQuery
             'carBrands' => fn (Builder|Relation $query): Builder|Relation => $query
                 ->where('is_active', true)
                 ->orderBy('name'),
-            'coverImage:id,service_center_id,path,alt_text,is_cover,sort_order',
+            'coverImage:id,service_center_id,disk,path,alt_text,is_cover,sort_order',
         ];
     }
 }

@@ -13,13 +13,12 @@ use Throwable;
 
 final class StoreCenterImageAction
 {
-    private const DISK = 'public';
-
     public function handle(ServiceCenter $serviceCenter, StoreCenterImageData $data): CenterImage
     {
-        $path = $data->image->storePublicly(
+        $disk = config('filesystems.center_images_disk');
+        $path = $data->image->store(
             "service-centers/{$serviceCenter->id}",
-            self::DISK,
+            ['disk' => $disk, 'visibility' => $disk === 's3' ? 'private' : 'public'],
         );
 
         if ($path === false) {
@@ -28,16 +27,16 @@ final class StoreCenterImageAction
 
         try {
             return DB::transaction(
-                fn (): CenterImage => $this->createImage($serviceCenter, $data, $path),
+                fn (): CenterImage => $this->createImage($serviceCenter, $data, $path, $disk),
             );
         } catch (Throwable $exception) {
-            Storage::disk(self::DISK)->delete($path);
+            Storage::disk($disk)->delete($path);
 
             throw $exception;
         }
     }
 
-    private function createImage(ServiceCenter $serviceCenter, StoreCenterImageData $data, string $path): CenterImage
+    private function createImage(ServiceCenter $serviceCenter, StoreCenterImageData $data, string $path, string $disk): CenterImage
     {
         $lockedServiceCenter = ServiceCenter::query()
             ->whereKey($serviceCenter->id)
@@ -60,6 +59,7 @@ final class StoreCenterImageAction
 
         return $lockedServiceCenter->images()->create([
             'path' => $path,
+            'disk' => $disk,
             'alt_text' => $data->altText,
             'is_cover' => $isCover,
             'sort_order' => $imagesCount === 0

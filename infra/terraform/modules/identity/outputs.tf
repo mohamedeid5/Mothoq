@@ -3,6 +3,11 @@ output "instance_profile_name" {
   value       = aws_iam_instance_profile.main.name
 }
 
+output "instance_role_name" {
+  description = "Name of the existing application EC2 role."
+  value       = aws_iam_role.instance.name
+}
+
 output "terraform_operator_attachment_id" {
   description = "ID of the Terraform operator policy attachment."
   value       = aws_iam_user_policy_attachment.terraform_operator.id

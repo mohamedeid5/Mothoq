@@ -97,3 +97,13 @@ output "ses_events_queue_arn" {
   description = "SQS queue ARN for scoped consumer permissions."
   value       = aws_sqs_queue.ses_events.arn
 }
+
+output "uploads_bucket_name" {
+  description = "Private uploads bucket to use as AWS_BUCKET when enabling S3 in Laravel."
+  value       = module.storage.uploads_bucket_name
+}
+
+output "uploads_bucket_arn" {
+  description = "ARN of the private application uploads bucket."
+  value       = module.storage.uploads_bucket_arn
+}
