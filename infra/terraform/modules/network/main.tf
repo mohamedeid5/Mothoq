@@ -53,6 +53,63 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
+resource "aws_subnet" "public_secondary" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.20.2.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[1]
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "${var.name}-public-secondary"
+  }
+}
+
+resource "aws_route_table_association" "public_secondary" {
+  subnet_id      = aws_subnet.public_secondary.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_subnet" "private_primary" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.20.11.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[0]
+  map_public_ip_on_launch = false
+
+  tags = {
+    Name = "${var.name}-private-primary"
+  }
+}
+
+resource "aws_subnet" "private_secondary" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.20.12.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[1]
+  map_public_ip_on_launch = false
+
+  tags = {
+    Name = "${var.name}-private-secondary"
+  }
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+  route  = []
+
+  tags = {
+    Name = "${var.name}-private"
+  }
+}
+
+resource "aws_route_table_association" "private_primary" {
+  subnet_id      = aws_subnet.private_primary.id
+  route_table_id = aws_route_table.private.id
+}
+
+resource "aws_route_table_association" "private_secondary" {
+  subnet_id      = aws_subnet.private_secondary.id
+  route_table_id = aws_route_table.private.id
+}
+
 resource "aws_security_group" "web" {
   name        = "${var.name}-web"
   description = "Public HTTP access for Mothoq; administration uses Session Manager"
@@ -62,14 +119,6 @@ resource "aws_security_group" "web" {
     description = "HTTP"
     from_port   = 80
     to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_http_cidrs
-  }
-
-  ingress {
-    description = "Public HTTPS for the origin"
-    from_port   = 443
-    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = var.allowed_http_cidrs
   }

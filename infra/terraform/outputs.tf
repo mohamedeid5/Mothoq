@@ -107,3 +107,18 @@ output "uploads_bucket_arn" {
   description = "ARN of the private application uploads bucket."
   value       = module.storage.uploads_bucket_arn
 }
+
+output "database_address" {
+  description = "Private RDS hostname; the application is not switched to it automatically."
+  value       = aws_db_instance.application.address
+}
+
+output "database_identifier" {
+  description = "Identifier of the production RDS instance."
+  value       = aws_db_instance.application.identifier
+}
+
+output "database_master_secret_arn" {
+  description = "Secrets Manager ARN for the RDS-managed administrator credentials, not their value."
+  value       = aws_db_instance.application.master_user_secret[0].secret_arn
+}

@@ -78,6 +78,10 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+RUN curl --fail --silent --show-error --location --retry 3 \
+    https://truststore.pki.rds.amazonaws.com/eu-north-1/eu-north-1-bundle.pem \
+    --output /usr/local/share/ca-certificates/aws-rds-eu-north-1.pem
+
 COPY --from=php-extensions /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 COPY --from=php-extensions /usr/local/etc/php/conf.d/docker-php-ext-*.ini /usr/local/etc/php/conf.d/
 
