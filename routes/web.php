@@ -7,6 +7,9 @@ use App\Http\Controllers\Web\Admin\OpeningHourController as AdminOpeningHourCont
 use App\Http\Controllers\Web\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Web\Admin\ServiceCenterController as AdminServiceCenterController;
 use App\Http\Controllers\Web\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Web\Auth\NewPasswordController;
+use App\Http\Controllers\Web\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Web\Auth\RegisteredUserController;
 use App\Http\Controllers\Web\BookingController;
 use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Web\Owner\BookingController as OwnerBookingController;
@@ -22,6 +25,13 @@ Route::get('/centers/{serviceCenter}', ServiceCenterController::class)
     ->name('service-centers.show');
 
 Route::middleware('guest')->group(function (): void {
+    Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+    Route::post('/register', [RegisteredUserController::class, 'store'])->middleware('throttle:6,1')->name('register.store');
+    Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->middleware('throttle:6,1')->name('password.email');
+    Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::post('/reset-password', [NewPasswordController::class, 'store'])->middleware('throttle:6,1')->name('password.store');
+
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])

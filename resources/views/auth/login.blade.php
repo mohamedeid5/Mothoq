@@ -9,14 +9,18 @@
             <div class="text-white">
                 <span class="inline-flex rounded-full border border-brand-300/20 bg-brand-400/10 px-4 py-2 text-sm font-bold text-brand-200">حساب واحد لإدارة كل شيء</span>
                 <h1 class="mt-6 max-w-xl text-4xl font-black leading-tight sm:text-5xl">أهلاً بعودتك إلى <span class="text-brand-300">موثوق</span></h1>
-                <p class="mt-5 max-w-lg text-lg leading-8 text-white/65">ادخل إلى حسابك لمتابعة بيانات مركزك وإدارة حضوره على المنصة بأمان.</p>
-                <div class="mt-8 grid max-w-lg gap-3 text-sm text-white/70 sm:grid-cols-2"><div class="rounded-2xl border border-white/10 bg-white/5 p-4">✓ دخول محمي بالـSession</div><div class="rounded-2xl border border-white/10 bg-white/5 p-4">✓ توجيه من Laravel حسب دورك</div></div>
+                <p class="mt-5 max-w-lg text-lg leading-8 text-white/65">ادخل إلى حسابك لمتابعة حجوزاتك أو إدارة مركزك على موثوق.</p>
+                <div class="mt-8 grid max-w-lg gap-3 text-sm text-white/70 sm:grid-cols-2"><div class="rounded-2xl border border-white/10 bg-white/5 p-4">✓ تابع حجوزاتك بسهولة</div><div class="rounded-2xl border border-white/10 bg-white/5 p-4">✓ كل تفاصيلك في مكان واحد</div></div>
             </div>
 
             <div class="rounded-[2rem] bg-white p-6 shadow-2xl shadow-black/25 sm:p-8">
                 <p class="text-sm font-bold text-brand-700">تسجيل الدخول</p>
                 <h2 class="mt-2 text-3xl font-black text-ink-950">ادخل بيانات حسابك</h2>
                 <p class="mt-2 text-sm leading-6 text-slate-500">استخدم البريد الإلكتروني وكلمة المرور المسجلين لدينا.</p>
+
+                @if (session('status'))
+                    <p role="status" class="mt-5 rounded-2xl bg-brand-50 p-4 text-sm text-brand-700">{{ session('status') }}</p>
+                @endif
 
                 <form method="POST" action="{{ route('login.store') }}" class="mt-7 grid gap-5">
                     @csrf
@@ -30,7 +34,9 @@
                     </label>
                     <label class="flex items-center gap-2 text-sm font-bold text-slate-600"><input name="remember" value="1" type="checkbox" class="size-4 rounded border-slate-300 text-brand-600"> تذكرني</label>
                     <button type="submit" class="mt-1 h-13 rounded-2xl bg-brand-600 px-5 font-black text-white transition hover:bg-brand-500">تسجيل الدخول</button>
+                    <a href="{{ route('password.request') }}" class="text-sm font-bold text-brand-700 hover:underline">نسيت كلمة المرور؟</a>
                 </form>
+                <p class="mt-6 text-sm text-slate-600">ليس لديك حساب؟ <a href="{{ route('register') }}" class="font-bold text-brand-700 hover:underline">إنشاء حساب جديد</a></p>
             </div>
         </div>
     </section>
