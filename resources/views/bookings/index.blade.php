@@ -21,7 +21,7 @@
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div>
                                 <div class="flex flex-wrap items-center gap-3"><h2 class="text-lg font-black text-ink-950">{{ $booking->serviceCenter->name }}</h2><span @class(['rounded-full px-3 py-1 text-xs font-black', 'bg-amber-50 text-amber-700' => $booking->status === App\Enums\BookingStatus::Pending, 'bg-blue-50 text-blue-700' => $booking->status === App\Enums\BookingStatus::Accepted, 'bg-red-50 text-red-700' => $booking->status === App\Enums\BookingStatus::Rejected, 'bg-slate-100 text-slate-600' => $booking->status === App\Enums\BookingStatus::Cancelled, 'bg-emerald-50 text-emerald-700' => $booking->status === App\Enums\BookingStatus::Completed])>{{ $booking->status->label() }}</span></div>
-                                <p class="mt-2 text-sm text-slate-500">{{ $booking->service->name }} · {{ $booking->scheduled_at->format('Y-m-d H:i') }}</p>
+                                <p class="mt-2 text-sm text-slate-500">{{ $booking->service->name }} · {{ $booking->scheduleLabel() }}</p>
                             </div>
                             @if (! $booking->serviceCenter->trashed() && $booking->serviceCenter->status === App\Enums\ServiceCenterStatus::Published)
                                 <a href="{{ route('service-centers.show', $booking->serviceCenter->slug) }}" class="text-sm font-black text-brand-700">صفحة المركز</a>

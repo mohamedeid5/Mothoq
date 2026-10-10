@@ -6,7 +6,7 @@
 تم استلام طلب حجزك لدى **{{ $booking->serviceCenter->name }}**، وحالته الآن **{{ $booking->status->label() }}**.
 
 - **الخدمة:** {{ $booking->service->name }}
-- **الموعد المطلوب:** {{ $booking->scheduled_at->format('Y-m-d H:i') }}
+- **الموعد المطلوب:** {{ $booking->scheduleLabel() }}
 - **رقم التواصل:** {{ $booking->customer_phone }}
 
 @if ($booking->notes)

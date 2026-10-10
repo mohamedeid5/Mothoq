@@ -3,7 +3,9 @@
 namespace Tests\Feature\Api\V1;
 
 use App\Enums\BookingStatus;
+use App\Enums\DayOfWeek;
 use App\Models\Booking;
+use App\Models\OpeningHour;
 use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
@@ -25,8 +27,9 @@ class BookingControllerTest extends TestCase
         $this->travelTo('2026-09-24 10:00:00');
         $customer = User::factory()->create();
         $service = Service::factory()->create();
-        $center = ServiceCenter::factory()->published()->create();
-        $center->services()->attach($service);
+        $center = ServiceCenter::factory()->published()->create(['timezone' => 'UTC']);
+        $center->services()->attach($service, ['duration_minutes' => 30]);
+        OpeningHour::factory()->for($center)->create(['day_of_week' => DayOfWeek::Friday]);
 
         $this->actingWithToken($customer)
             ->postJson(route('api.v1.bookings.store', $center->slug), [
@@ -51,7 +54,7 @@ class BookingControllerTest extends TestCase
     public function test_store_returns_422_for_invalid_payload(): void
     {
         $customer = User::factory()->create();
-        $center = ServiceCenter::factory()->published()->create();
+        $center = ServiceCenter::factory()->published()->create(['timezone' => 'UTC']);
 
         $this->actingWithToken($customer)
             ->postJson(route('api.v1.bookings.store', $center->slug), [])

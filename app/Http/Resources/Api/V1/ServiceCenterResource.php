@@ -18,6 +18,7 @@ class ServiceCenterResource extends ServiceCenterSummaryResource
     public function toArray(Request $request): array
     {
         return [
+            'timezone' => $this->timezone,
             ...parent::toArray($request),
             'whatsapp' => $this->whatsapp,
             'images' => $this->images->map(fn (CenterImage $image): array => [

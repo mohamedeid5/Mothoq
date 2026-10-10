@@ -19,7 +19,7 @@ class Service extends Model
 
     public function serviceCenters(): BelongsToMany
     {
-        return $this->belongsToMany(ServiceCenter::class);
+        return $this->belongsToMany(ServiceCenter::class)->withPivot('duration_minutes');
     }
 
     public function bookings(): HasMany

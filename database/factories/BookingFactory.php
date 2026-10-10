@@ -27,6 +27,8 @@ class BookingFactory extends Factory
             'service_id' => Service::factory(),
             'customer_phone' => fake()->numerify('01#########'),
             'scheduled_at' => now()->addDays(fake()->numberBetween(1, 14))->setTime(10, 0),
+            'duration_minutes' => 30,
+            'scheduled_at_timezone' => 'UTC',
             'notes' => fake()->optional()->sentence(),
             'status' => BookingStatus::Pending,
             'status_note' => null,

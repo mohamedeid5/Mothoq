@@ -6,7 +6,7 @@
 تم تحديث حالة حجزك لدى **{{ $booking->serviceCenter->name }}** إلى **{{ $booking->status->label() }}**.
 
 - **الخدمة:** {{ $booking->service->name }}
-- **الموعد:** {{ $booking->scheduled_at->format('Y-m-d H:i') }}
+- **الموعد:** {{ $booking->scheduleLabel() }}
 
 @if ($booking->status_note)
 **ملاحظة المركز:** {{ $booking->status_note }}

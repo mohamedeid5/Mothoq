@@ -7,6 +7,7 @@ use Illuminate\Support\Arr;
 final readonly class UpdateServiceCenterData
 {
     private const ATTRIBUTE_FIELDS = [
+        'timezone',
         'city_id',
         'name',
         'description',
@@ -37,6 +38,7 @@ final readonly class UpdateServiceCenterData
             carBrandIds: array_key_exists('car_brand_ids', $attributes)
                 ? array_map(intval(...), $attributes['car_brand_ids'])
                 : null,
+            timezone: $attributes['timezone'] ?? null,
             providedFields: array_values(array_intersect(array_keys($attributes), self::ATTRIBUTE_FIELDS)),
         );
     }
@@ -58,12 +60,14 @@ final readonly class UpdateServiceCenterData
         public ?array $serviceIds,
         public ?array $carBrandIds,
         private array $providedFields,
+        public ?string $timezone = null,
     ) {}
 
     /** @return array<string, mixed> */
     public function toArray(): array
     {
         return Arr::only([
+            'timezone' => $this->timezone,
             'city_id' => $this->cityId,
             'name' => $this->name,
             'description' => $this->description,

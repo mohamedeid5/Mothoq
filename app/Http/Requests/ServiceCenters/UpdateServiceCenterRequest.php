@@ -30,6 +30,7 @@ class UpdateServiceCenterRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'timezone' => ['sometimes', 'required', 'timezone:all'],
             'governorate' => [
                 'sometimes',
                 'required',

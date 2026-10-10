@@ -4,7 +4,9 @@ use App\Http\Controllers\Api\V1\Admin\BookingController as AdminBookingControlle
 use App\Http\Controllers\Api\V1\Admin\CenterImageController as AdminCenterImageController;
 use App\Http\Controllers\Api\V1\Admin\OpeningHourController as AdminOpeningHourController;
 use App\Http\Controllers\Api\V1\Admin\ReviewController as AdminReviewController;
+use App\Http\Controllers\Api\V1\Admin\ScheduleExceptionController as AdminScheduleExceptionController;
 use App\Http\Controllers\Api\V1\Admin\ServiceCenterController as AdminServiceCenterController;
+use App\Http\Controllers\Api\V1\Admin\ServiceDurationController as AdminServiceDurationController;
 use App\Http\Controllers\Api\V1\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Api\V1\Auth\CurrentUserController;
 use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
@@ -15,8 +17,11 @@ use App\Http\Controllers\Api\V1\GovernorateController;
 use App\Http\Controllers\Api\V1\Owner\BookingController as OwnerBookingController;
 use App\Http\Controllers\Api\V1\Owner\CenterImageController as OwnerCenterImageController;
 use App\Http\Controllers\Api\V1\Owner\OpeningHourController as OwnerOpeningHourController;
+use App\Http\Controllers\Api\V1\Owner\ScheduleExceptionController as OwnerScheduleExceptionController;
 use App\Http\Controllers\Api\V1\Owner\ServiceCenterController as OwnerServiceCenterController;
+use App\Http\Controllers\Api\V1\Owner\ServiceDurationController as OwnerServiceDurationController;
 use App\Http\Controllers\Api\V1\ReviewController;
+use App\Http\Controllers\Api\V1\ScheduleController;
 use App\Http\Controllers\Api\V1\ServiceCenterController;
 use App\Http\Controllers\Api\V1\ServiceController;
 use Illuminate\Support\Facades\Route;
@@ -82,6 +87,14 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('service-centers/{serviceCenter}', [AdminServiceCenterController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.update');
+            Route::get('service-centers/{serviceCenter}/schedule-exceptions', [AdminScheduleExceptionController::class, 'index'])
+                ->whereNumber('serviceCenter')->name('service-centers.schedule-exceptions.index');
+            Route::put('service-centers/{serviceCenter}/schedule-exceptions', [AdminScheduleExceptionController::class, 'store'])
+                ->whereNumber('serviceCenter')->name('service-centers.schedule-exceptions.store');
+            Route::delete('service-centers/{serviceCenter}/schedule-exceptions/{scheduleException}', [AdminScheduleExceptionController::class, 'destroy'])
+                ->whereNumber(['serviceCenter', 'scheduleException'])->name('service-centers.schedule-exceptions.destroy');
+            Route::patch('service-centers/{serviceCenter}/services/{service}/duration', [AdminServiceDurationController::class, 'update'])
+                ->whereNumber(['serviceCenter', 'service'])->name('service-centers.services.duration.update');
             Route::patch('service-centers/{serviceCenter}/opening-hours', [AdminOpeningHourController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.opening-hours.update');
@@ -125,6 +138,14 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('service-centers/{serviceCenter}', [OwnerServiceCenterController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.update');
+            Route::get('service-centers/{serviceCenter}/schedule-exceptions', [OwnerScheduleExceptionController::class, 'index'])
+                ->whereNumber('serviceCenter')->name('service-centers.schedule-exceptions.index');
+            Route::put('service-centers/{serviceCenter}/schedule-exceptions', [OwnerScheduleExceptionController::class, 'store'])
+                ->whereNumber('serviceCenter')->name('service-centers.schedule-exceptions.store');
+            Route::delete('service-centers/{serviceCenter}/schedule-exceptions/{scheduleException}', [OwnerScheduleExceptionController::class, 'destroy'])
+                ->whereNumber(['serviceCenter', 'scheduleException'])->name('service-centers.schedule-exceptions.destroy');
+            Route::patch('service-centers/{serviceCenter}/services/{service}/duration', [OwnerServiceDurationController::class, 'update'])
+                ->whereNumber(['serviceCenter', 'service'])->name('service-centers.services.duration.update');
             Route::patch('service-centers/{serviceCenter}/opening-hours', [OwnerOpeningHourController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.opening-hours.update');
@@ -155,6 +176,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         ->name('car-brands.index');
     Route::get('service-centers', [ServiceCenterController::class, 'index'])
         ->name('service-centers.index');
+    Route::get('service-centers/{serviceCenter}/schedule', [ScheduleController::class, 'show'])
+        ->name('service-centers.schedule.show');
     Route::get('service-centers/{serviceCenter}', [ServiceCenterController::class, 'show'])
         ->name('service-centers.show');
 });

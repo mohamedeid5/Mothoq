@@ -22,6 +22,7 @@ class ServiceResource extends JsonResource
             'slug' => $this->slug,
             'description' => $this->description,
             'icon' => $this->icon,
+            'duration_minutes' => $this->whenPivotLoaded('service_service_center', fn () => $this->pivot->duration_minutes === null ? null : (int) $this->pivot->duration_minutes),
         ];
     }
 }

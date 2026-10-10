@@ -27,11 +27,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'longitude',
     'status',
     'verified_at',
+    'timezone',
 ])]
 class ServiceCenter extends Model
 {
     /** @use HasFactory<ServiceCenterFactory> */
     use HasFactory, SoftDeletes;
+
+    protected $attributes = ['timezone' => 'Africa/Cairo'];
 
     public function city(): BelongsTo
     {
@@ -45,7 +48,7 @@ class ServiceCenter extends Model
 
     public function services(): BelongsToMany
     {
-        return $this->belongsToMany(Service::class);
+        return $this->belongsToMany(Service::class)->withPivot('duration_minutes');
     }
 
     public function carBrands(): BelongsToMany
@@ -79,6 +82,11 @@ class ServiceCenter extends Model
             ->where('is_cover', true)
             ->orderBy('sort_order')
             ->orderBy('id');
+    }
+
+    public function scheduleExceptions(): HasMany
+    {
+        return $this->hasMany(ServiceCenterScheduleException::class);
     }
 
     public function openingHours(): HasMany

@@ -3,9 +3,11 @@
 namespace Tests\Feature\Web;
 
 use App\Enums\BookingStatus;
+use App\Enums\DayOfWeek;
 use App\Mail\BookingCreatedConfirmation;
 use App\Mail\NewBookingReceived;
 use App\Models\Booking;
+use App\Models\OpeningHour;
 use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
@@ -29,8 +31,9 @@ class BookingControllerTest extends TestCase
         $this->travelTo('2026-09-24 10:00:00');
         $customer = User::factory()->create();
         $service = Service::factory()->create();
-        $serviceCenter = ServiceCenter::factory()->published()->create();
-        $serviceCenter->services()->attach($service);
+        $serviceCenter = ServiceCenter::factory()->published()->create(['timezone' => 'UTC']);
+        $serviceCenter->services()->attach($service, ['duration_minutes' => 30]);
+        OpeningHour::factory()->for($serviceCenter)->create(['day_of_week' => DayOfWeek::Friday]);
         Mail::fake();
 
         $this->actingAs($customer)
@@ -76,9 +79,9 @@ class BookingControllerTest extends TestCase
     {
         $this->travelTo('2026-09-24 10:00:00');
         $customer = User::factory()->create();
-        $serviceCenter = ServiceCenter::factory()->published()->create();
+        $serviceCenter = ServiceCenter::factory()->published()->create(['timezone' => 'UTC']);
         $service = Service::factory()->create();
-        $serviceCenter->services()->attach($service);
+        $serviceCenter->services()->attach($service, ['duration_minutes' => 30]);
 
         $this->actingAs($customer)
             ->from(route('service-centers.show', $serviceCenter->slug))
@@ -99,7 +102,7 @@ class BookingControllerTest extends TestCase
     public function test_store_rejects_service_not_offered_by_center(): void
     {
         $customer = User::factory()->create();
-        $serviceCenter = ServiceCenter::factory()->published()->create();
+        $serviceCenter = ServiceCenter::factory()->published()->create(['timezone' => 'UTC']);
         $otherService = Service::factory()->create();
         Mail::fake();
 
@@ -126,7 +129,7 @@ class BookingControllerTest extends TestCase
             ->post(route('bookings.store', $booking->serviceCenter->slug), [
                 'service_id' => $booking->service_id,
                 'customer_phone' => '01012345678',
-                'scheduled_at' => $booking->scheduled_at->format('Y-m-d\TH:i'),
+                'scheduled_at' => $booking->scheduled_at->format('Y-m-d\TH:i:s\Z'),
             ])
             ->assertSessionHasErrors([
                 'scheduled_at' => 'لديك حجز قائم في نفس المركز وفي نفس الموعد.',
