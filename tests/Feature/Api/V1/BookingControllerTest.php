@@ -27,7 +27,7 @@ class BookingControllerTest extends TestCase
         $this->travelTo('2026-09-24 10:00:00');
         $customer = User::factory()->create();
         $service = Service::factory()->create();
-        $center = ServiceCenter::factory()->published()->create(['timezone' => 'UTC']);
+        $center = ServiceCenter::factory()->published()->create();
         $center->services()->attach($service, ['duration_minutes' => 30]);
         OpeningHour::factory()->for($center)->create(['day_of_week' => DayOfWeek::Friday]);
 
@@ -54,7 +54,7 @@ class BookingControllerTest extends TestCase
     public function test_store_returns_422_for_invalid_payload(): void
     {
         $customer = User::factory()->create();
-        $center = ServiceCenter::factory()->published()->create(['timezone' => 'UTC']);
+        $center = ServiceCenter::factory()->published()->create();
 
         $this->actingWithToken($customer)
             ->postJson(route('api.v1.bookings.store', $center->slug), [])

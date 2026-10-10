@@ -12,6 +12,7 @@ use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\ServiceCenterScheduleException;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -28,20 +29,20 @@ class ServiceCenterSchedulingTest extends TestCase
     public static function boundaries(): array
     {
         return [
-            'opening' => ['2026-09-25T09:00', 45, 201, '2026-09-25 06:00:00'],
+            'opening' => ['2026-09-25T09:00', 45, 201, '2026-09-25 09:00:00'],
             'before opening' => ['2026-09-25T08:59:59', 45, 422, null],
-            'end exactly closing' => ['2026-09-25T17:15', 45, 201, '2026-09-25 14:15:00'],
+            'end exactly closing' => ['2026-09-25T17:15', 45, 201, '2026-09-25 17:15:00'],
             'end after closing' => ['2026-09-25T17:16', 45, 422, null],
             'start at closing' => ['2026-09-25T18:00', 45, 422, null],
-            'short service fits' => ['2026-09-25T17:30', 30, 201, '2026-09-25 14:30:00'],
+            'short service fits' => ['2026-09-25T17:30', 30, 201, '2026-09-25 17:30:00'],
             'long service overruns' => ['2026-09-25T17:30', 90, 422, null],
-            'explicit UTC opening' => ['2026-09-25T06:00:00Z', 45, 201, '2026-09-25 06:00:00'],
-            'explicit Cairo opening' => ['2026-09-25T09:00:00+03:00', 45, 201, '2026-09-25 06:00:00'],
+            'UTC input rejected' => ['2026-09-25T06:00:00Z', 45, 422, null],
+            'offset input rejected' => ['2026-09-25T09:00:00+03:00', 45, 422, null],
         ];
     }
 
     #[DataProvider('boundaries')]
-    public function test_booking_checks_full_database_duration_in_center_timezone(string $start, int $duration, int $status, ?string $utc): void
+    public function test_booking_checks_full_database_duration_and_saves_egypt_local_time(string $start, int $duration, int $status, ?string $storedTime): void
     {
         $this->travelTo('2026-09-24 00:00:00');
         [$center, $service] = $this->centerWithService($duration);
@@ -50,13 +51,12 @@ class ServiceCenterSchedulingTest extends TestCase
         $response = $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), [
             ...$this->bookingPayload($service, $start),
             'duration_minutes' => 1,
-            'scheduled_at_timezone' => 'Europe/London',
         ]);
 
         $response->assertStatus($status);
         if ($status === 201) {
-            $response->assertJsonPath('data.duration_minutes', $duration)->assertJsonPath('data.scheduled_at_timezone', 'UTC');
-            $this->assertDatabaseHas('bookings', ['scheduled_at' => $utc, 'duration_minutes' => $duration, 'scheduled_at_timezone' => 'UTC']);
+            $response->assertJsonPath('data.duration_minutes', $duration)->assertJsonMissingPath('data.scheduled_at_timezone');
+            $this->assertDatabaseHas('bookings', ['scheduled_at' => $storedTime, 'duration_minutes' => $duration]);
             Mail::assertQueued(BookingCreatedConfirmation::class);
         } else {
             $response->assertJsonValidationErrors('scheduled_at');
@@ -148,7 +148,7 @@ class ServiceCenterSchedulingTest extends TestCase
         $this->assertDatabaseCount('service_center_schedule_exceptions', 1);
         $this->assertSame($createdAt->toISOString(), $exception->fresh()->created_at->toISOString());
         $this->getJson(route('api.v1.service-centers.schedule.show', ['serviceCenter' => $center->slug, 'date' => '2026-09-25']))
-            ->assertOk()->assertJsonPath('data.source', 'exception')->assertJsonPath('data.opens_at', '10:00')->assertJsonPath('data.timezone', 'Africa/Cairo');
+            ->assertOk()->assertJsonPath('data.source', 'exception')->assertJsonPath('data.opens_at', '10:00')->assertJsonMissingPath('data.timezone');
 
         $this->deleteJson(route('api.v1.owner.service-centers.schedule-exceptions.destroy', [$center, $exception]))->assertNoContent();
         $this->getJson(route('api.v1.service-centers.schedule.show', ['serviceCenter' => $center->slug, 'date' => '2026-09-25']))
@@ -247,17 +247,17 @@ class ServiceCenterSchedulingTest extends TestCase
         $this->assertDatabaseCount('service_center_schedule_exceptions', 0);
     }
 
-    /** @return array<string, array{?int, ?string}> */
+    /** @return array<string, array{BookingStatus}> */
     public static function legacyBookings(): array
     {
-        return ['unknown duration' => [null, 'UTC'], 'unknown timezone' => [30, null], 'both unknown' => [null, null]];
+        return ['pending' => [BookingStatus::Pending], 'accepted' => [BookingStatus::Accepted]];
     }
 
     #[DataProvider('legacyBookings')]
-    public function test_unknown_active_booking_blocks_schedule_changes_without_mutating_history(?int $duration, ?string $timezone): void
+    public function test_unknown_active_booking_blocks_schedule_changes_without_mutating_history(BookingStatus $status): void
     {
         [$center, $service] = $this->centerWithService(30);
-        $booking = Booking::factory()->for($center)->for($service)->create(['scheduled_at' => '2026-09-25 09:00:00', 'duration_minutes' => $duration, 'scheduled_at_timezone' => $timezone]);
+        $booking = Booking::factory()->for($center)->for($service)->create(['scheduled_at' => '2026-09-25 09:00:00', 'duration_minutes' => null, 'status' => $status]);
         $original = $booking->fresh()->getRawOriginal();
 
         $this->actingAs($center->owner)->putJson(route('api.v1.owner.service-centers.schedule-exceptions.store', $center), ['date' => '2026-09-25', 'is_closed' => true])
@@ -270,7 +270,7 @@ class ServiceCenterSchedulingTest extends TestCase
     public function test_conflicting_weekly_schedule_and_exception_deletion_roll_back(): void
     {
         [$center, $service] = $this->centerWithService(90);
-        Booking::factory()->for($center)->for($service)->create(['scheduled_at' => '2026-09-25 14:00:00', 'duration_minutes' => 90]);
+        Booking::factory()->for($center)->for($service)->create(['scheduled_at' => '2026-09-25 17:00:00', 'duration_minutes' => 90]);
         $exception = $center->scheduleExceptions()->create(['date' => '2026-09-25', 'is_closed' => false, 'opens_at' => '09:00', 'closes_at' => '19:00']);
         $center->openingHours()->update(['closes_at' => '17:30']);
         $this->actingAs($center->owner);
@@ -290,7 +290,7 @@ class ServiceCenterSchedulingTest extends TestCase
     public function test_weekly_change_respects_exception_and_stored_duration_snapshot(): void
     {
         [$center, $service] = $this->centerWithService(120);
-        Booking::factory()->for($center)->for($service)->create(['scheduled_at' => '2026-09-25 14:30:00', 'duration_minutes' => 30]);
+        Booking::factory()->for($center)->for($service)->create(['scheduled_at' => '2026-09-25 17:30:00', 'duration_minutes' => 30]);
         $center->scheduleExceptions()->create(['date' => '2026-09-25', 'is_closed' => false, 'opens_at' => '09:00', 'closes_at' => '18:00']);
         $hours = array_map(fn (DayOfWeek $day): array => ['day' => $day->value, 'is_closed' => true, 'opens_at' => null, 'closes_at' => null], DayOfWeek::cases());
 
@@ -304,41 +304,41 @@ class ServiceCenterSchedulingTest extends TestCase
     {
         [$center, $service] = $this->centerWithService(30);
         foreach ([BookingStatus::Completed, BookingStatus::Cancelled, BookingStatus::Rejected] as $status) {
-            Booking::factory()->for($center)->for($service)->create(['status' => $status, 'duration_minutes' => null, 'scheduled_at_timezone' => null]);
+            Booking::factory()->for($center)->for($service)->create(['status' => $status, 'duration_minutes' => null]);
         }
 
         $this->actingAs($center->owner)->putJson(route('api.v1.owner.service-centers.schedule-exceptions.store', $center), ['date' => '2026-09-25', 'is_closed' => true])->assertCreated();
 
-        $this->assertSame(3, Booking::query()->whereNull('duration_minutes')->whereNull('scheduled_at_timezone')->count());
+        $this->assertSame(3, Booking::query()->whereNull('duration_minutes')->count());
     }
 
-    public function test_legacy_response_does_not_claim_unverified_timestamp_is_utc(): void
+    public function test_legacy_response_keeps_local_time_and_requires_duration_review(): void
     {
         $customer = User::factory()->create();
-        Booking::factory()->for($customer, 'customer')->create(['scheduled_at' => '2026-09-25 12:00:00', 'duration_minutes' => null, 'scheduled_at_timezone' => null]);
+        Booking::factory()->for($customer, 'customer')->create(['scheduled_at' => '2026-09-25 12:00:00', 'duration_minutes' => null]);
 
         $this->actingAs($customer)->getJson(route('api.v1.bookings.index'))->assertOk()
             ->assertJsonPath('data.0.scheduled_at', '2026-09-25 12:00:00')
-            ->assertJsonPath('data.0.scheduled_at_timezone', null)
+            ->assertJsonMissingPath('data.0.scheduled_at_timezone')
             ->assertJsonPath('data.0.schedule_requires_review', true)
             ->assertJsonPath('data.0.ends_at', null);
     }
 
     /** @return array<string, array{string, string, string, int, ?string}> */
-    public static function timezoneCases(): array
+    public static function localTimeCases(): array
     {
         return [
-            'winter offset' => ['2026-01-02T09:00', '09:00', '18:00', 201, '2026-01-02 07:00:00'],
-            'summer offset' => ['2026-09-25T09:00', '09:00', '18:00', 201, '2026-09-25 06:00:00'],
-            'UTC previous calendar day' => ['2026-09-24T22:30:00Z', '01:00', '05:00', 201, '2026-09-24 22:30:00'],
+            'winter time unchanged' => ['2026-01-02T09:00', '09:00', '18:00', 201, '2026-01-02 09:00:00'],
+            'summer time unchanged' => ['2026-09-25T09:00', '09:00', '18:00', 201, '2026-09-25 09:00:00'],
+            'UTC date input rejected' => ['2026-09-24T22:30:00Z', '01:00', '05:00', 422, null],
             'spring missing time' => ['2026-04-24T00:30', '01:00', '05:00', 422, null],
-            'autumn repeated time' => ['2026-10-29T23:10', '21:00', '23:59', 422, null],
-            'explicit repeated time with ambiguous closing is unavailable' => ['2026-10-29T23:10:00+03:00', '21:00', '23:59', 422, null],
+            'autumn local time stored as entered' => ['2026-10-29T23:10', '21:00', '23:59', 201, '2026-10-29 23:10:00'],
+            'explicit offset rejected' => ['2026-10-29T23:10:00+03:00', '21:00', '23:59', 422, null],
         ];
     }
 
-    #[DataProvider('timezoneCases')]
-    public function test_timezone_offsets_local_dates_and_dst_are_explicit(string $start, string $opens, string $closes, int $status, ?string $utc): void
+    #[DataProvider('localTimeCases')]
+    public function test_local_times_are_preserved_and_offset_inputs_are_rejected(string $start, string $opens, string $closes, int $status, ?string $storedTime): void
     {
         $this->travelTo('2025-12-01');
         [$center, $service] = $this->centerWithService(30);
@@ -351,19 +351,19 @@ class ServiceCenterSchedulingTest extends TestCase
         $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, $start))->assertStatus($status);
 
         $this->assertDatabaseCount('bookings', $status === 201 ? 1 : 0);
-        if ($utc !== null) {
-            $this->assertDatabaseHas('bookings', ['scheduled_at' => $utc]);
+        if ($storedTime !== null) {
+            $this->assertDatabaseHas('bookings', ['scheduled_at' => $storedTime]);
         }
     }
 
-    public function test_timezone_change_cannot_invalidate_active_booking(): void
+    public function test_center_update_does_not_add_a_timezone_setting(): void
     {
-        [$center, $service] = $this->centerWithService(30);
-        Booking::factory()->for($center)->for($service)->create(['scheduled_at' => '2026-09-25 06:00:00']);
+        [$center] = $this->centerWithService(30);
 
-        $this->actingAs($center->owner)->patchJson(route('api.v1.owner.service-centers.update', $center), ['timezone' => 'UTC'])->assertUnprocessable()->assertJsonValidationErrors('timezone');
+        $this->actingAs($center->owner)->patchJson(route('api.v1.owner.service-centers.update', $center), ['timezone' => 'UTC'])
+            ->assertOk()->assertJsonMissingPath('data.timezone');
 
-        $this->assertSame('Africa/Cairo', $center->fresh()->timezone);
+        $this->assertArrayNotHasKey('timezone', $center->fresh()->getAttributes());
     }
 
     /** @return array<string, array{mixed}> */
@@ -396,22 +396,22 @@ class ServiceCenterSchedulingTest extends TestCase
         $this->assertDatabaseHas('service_service_center', ['service_center_id' => $center->id, 'duration_minutes' => null]);
     }
 
-    public function test_duplicate_booking_uses_utc_instant_across_different_offsets(): void
+    public function test_duplicate_booking_matches_local_time_with_and_without_seconds(): void
     {
         $this->travelTo('2026-09-24');
         [$center, $service] = $this->centerWithService(30);
         Mail::fake();
         $this->actingAs(User::factory()->create());
-        $this->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25T09:00:00+03:00'))->assertCreated();
+        $this->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25T09:00'))->assertCreated();
 
-        $this->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25T06:00:00Z'))->assertUnprocessable()
+        $this->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25 09:00:00'))->assertUnprocessable()
             ->assertJsonPath('errors.scheduled_at.0', 'لديك حجز قائم في نفس المركز وفي نفس الموعد.');
 
         $this->assertDatabaseCount('bookings', 1);
         Mail::assertQueued(BookingCreatedConfirmation::class, 1);
     }
 
-    public function test_exception_uses_center_calendar_date_when_utc_date_is_previous_day(): void
+    public function test_exception_and_booking_use_the_same_local_calendar_date(): void
     {
         $this->travelTo('2026-09-24');
         [$center, $service] = $this->centerWithService(30);
@@ -419,10 +419,10 @@ class ServiceCenterSchedulingTest extends TestCase
         $center->scheduleExceptions()->create(['date' => '2026-09-25', 'is_closed' => false, 'opens_at' => '01:00', 'closes_at' => '05:00']);
         Mail::fake();
 
-        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-24T22:30:00Z'))
-            ->assertCreated()->assertJsonPath('data.scheduled_at', '2026-09-24T22:30:00.000000Z');
+        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25T01:30:00'))
+            ->assertCreated()->assertJsonPath('data.scheduled_at', '2026-09-25 01:30:00');
 
-        $this->assertDatabaseHas('bookings', ['scheduled_at' => '2026-09-24 22:30:00']);
+        $this->assertDatabaseHas('bookings', ['scheduled_at' => '2026-09-25 01:30:00']);
     }
 
     public function test_changed_duration_applies_only_to_later_bookings(): void
@@ -440,21 +440,21 @@ class ServiceCenterSchedulingTest extends TestCase
         $this->assertDatabaseHas('bookings', ['duration_minutes' => 30]);
     }
 
-    public function test_public_schedule_rejects_invalid_date_and_reports_ambiguous_dst_boundary_unavailable(): void
+    public function test_public_schedule_returns_local_hours_and_rejects_invalid_date(): void
     {
         $center = ServiceCenter::factory()->published()->create();
         $center->scheduleExceptions()->create(['date' => '2026-10-29', 'is_closed' => false, 'opens_at' => '21:00', 'closes_at' => '23:59']);
 
         $this->getJson(route('api.v1.service-centers.schedule.show', ['serviceCenter' => $center->slug, 'date' => '2026-10-29']))
-            ->assertOk()->assertJsonPath('data.is_available', false);
+            ->assertOk()->assertJsonPath('data.is_available', true)->assertJsonPath('data.closes_at', '23:59');
         $this->getJson(route('api.v1.service-centers.schedule.show', ['serviceCenter' => $center->slug, 'date' => '2026-02-30']))
             ->assertUnprocessable()->assertJsonValidationErrors('date');
     }
 
-    public function test_unrelated_date_exception_does_not_block_a_known_legacy_duration(): void
+    public function test_unrelated_date_exception_does_not_block_an_unknown_legacy_duration(): void
     {
         [$center, $service] = $this->centerWithService(30);
-        Booking::factory()->for($center)->for($service)->create(['scheduled_at' => '2026-09-25 09:00:00', 'duration_minutes' => null, 'scheduled_at_timezone' => 'UTC']);
+        Booking::factory()->for($center)->for($service)->create(['scheduled_at' => '2026-09-25 09:00:00', 'duration_minutes' => null]);
 
         $this->actingAs($center->owner)->putJson(route('api.v1.owner.service-centers.schedule-exceptions.store', $center), ['date' => '2026-09-26', 'is_closed' => true])->assertCreated();
 
@@ -476,17 +476,40 @@ class ServiceCenterSchedulingTest extends TestCase
         $this->assertDatabaseCount('service_center_schedule_exceptions', 0);
     }
 
-    public function test_bookings_remain_utc_when_application_timezone_differs(): void
+    public function test_booking_response_and_label_keep_the_entered_local_time(): void
     {
         $this->travelTo('2026-09-24');
-        config(['app.timezone' => 'America/New_York']);
         [$center, $service] = $this->centerWithService(30);
         Mail::fake();
 
-        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25T09:00:00.000000+03:00'))
-            ->assertCreated()->assertJsonPath('data.scheduled_at', '2026-09-25T06:00:00.000000Z')->assertJsonPath('data.ends_at', '2026-09-25T06:30:00.000000Z');
+        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25 09:00:00'))
+            ->assertCreated()->assertJsonPath('data.scheduled_at', '2026-09-25 09:00:00')->assertJsonPath('data.ends_at', '2026-09-25 09:30:00');
 
-        $this->assertDatabaseHas('bookings', ['scheduled_at' => '2026-09-25 06:00:00']);
+        $this->assertDatabaseHas('bookings', ['scheduled_at' => '2026-09-25 09:00:00']);
+        $this->assertSame('2026-09-25 09:00 بتوقيت مصر', Booking::query()->sole()->scheduleLabel());
+    }
+
+    /** @return array<string, array{string, int}> */
+    public static function futureLocalTimes(): array
+    {
+        return ['current local minute' => ['2026-09-25T09:00', 422], 'next local minute' => ['2026-09-25T09:01', 201]];
+    }
+
+    #[DataProvider('futureLocalTimes')]
+    public function test_future_validation_uses_egypt_current_time(string $start, int $status): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-09-25 06:00:00', 'UTC'));
+        [$center, $service] = $this->centerWithService(30);
+        Mail::fake();
+
+        $response = $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, $start));
+
+        $response->assertStatus($status);
+        $this->assertDatabaseCount('bookings', $status === 201 ? 1 : 0);
+        if ($status === 422) {
+            $response->assertJsonPath('errors.scheduled_at.0', 'موعد الحجز يجب أن يكون في المستقبل.');
+            Mail::assertNothingQueued();
+        }
     }
 
     /** @return array{ServiceCenter, Service} */

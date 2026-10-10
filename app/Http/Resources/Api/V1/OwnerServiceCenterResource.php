@@ -18,7 +18,6 @@ class OwnerServiceCenterResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'timezone' => $this->timezone,
             'id' => $this->id,
             'owner' => [
                 'id' => $this->owner->id,

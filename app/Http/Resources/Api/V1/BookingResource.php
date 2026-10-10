@@ -19,12 +19,11 @@ class BookingResource extends JsonResource
         return [
             'id' => $this->id,
             'customer_phone' => $this->customer_phone,
-            'scheduled_at' => $this->scheduledAtUtc()?->toISOString() ?? $this->getRawOriginal('scheduled_at'),
-            'scheduled_at_timezone' => $this->scheduled_at_timezone,
+            'scheduled_at' => $this->scheduled_at->format('Y-m-d H:i:s'),
             'duration_minutes' => $this->duration_minutes,
-            'schedule_requires_review' => $this->duration_minutes === null || $this->scheduled_at_timezone !== 'UTC',
-            'ends_at' => $this->duration_minutes !== null && $this->scheduled_at_timezone === 'UTC'
-                ? $this->scheduledAtUtc()->addMinutes($this->duration_minutes)->toISOString() : null,
+            'schedule_requires_review' => $this->duration_minutes === null,
+            'ends_at' => $this->duration_minutes !== null
+                ? $this->scheduled_at->addMinutes($this->duration_minutes)->format('Y-m-d H:i:s') : null,
             'notes' => $this->notes,
             'status' => $this->status->value,
             'status_label' => $this->status->label(),

@@ -4,7 +4,7 @@
     <p class="mt-2 text-sm leading-6 text-[#718489]">اختر الخدمة والموعد المناسب، والمركز هيراجع طلبك.</p>
 
     <details class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4" open>
-        <summary class="cursor-pointer text-sm font-bold text-ink-950">مواعيد الحجز بتوقيت {{ $serviceCenter->timezone }}</summary>
+        <summary class="cursor-pointer text-sm font-bold text-ink-950">مواعيد الحجز بتوقيت مصر</summary>
         <dl class="mt-3 grid gap-2 text-sm">
             @foreach (\App\Enums\DayOfWeek::cases() as $day)
                 @php($hours = $serviceCenter->openingHours->firstWhere('day_of_week', $day))
@@ -46,7 +46,7 @@
         </label>
 
         <label class="grid gap-2 text-sm font-black text-slate-700">الموعد المطلوب
-            <input type="datetime-local" name="scheduled_at" value="{{ old('scheduled_at') }}" min="{{ now($serviceCenter->timezone)->addMinute()->startOfMinute()->format('Y-m-d\TH:i') }}" required class="h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none focus:border-brand-500">
+            <input type="datetime-local" name="scheduled_at" value="{{ old('scheduled_at') }}" min="{{ now()->addMinute()->startOfMinute()->format('Y-m-d\TH:i') }}" required class="h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 font-normal outline-none focus:border-brand-500">
         </label>
 
         <label class="grid gap-2 text-sm font-black text-slate-700">ملاحظات <span class="font-medium text-slate-400">(اختياري)</span>

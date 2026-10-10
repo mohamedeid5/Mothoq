@@ -48,7 +48,7 @@ final class OwnerBookingQuery
         return Booking::query()
             ->with([
                 'customer:id,name,email',
-                'serviceCenter:id,name,slug,timezone,owner_id',
+                'serviceCenter:id,name,slug,owner_id',
                 'service:id,name,slug',
             ])
             ->whereHas('serviceCenter', fn (Builder $query): Builder => $query

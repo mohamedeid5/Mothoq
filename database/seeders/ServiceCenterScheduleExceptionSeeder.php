@@ -11,7 +11,7 @@ class ServiceCenterScheduleExceptionSeeder extends Seeder
     public function run(): void
     {
         ServiceCenterScheduleException::factory()->closed()->create([
-            'date' => now('Africa/Cairo')->addWeek()->toDateString(),
+            'date' => now()->addWeek()->toDateString(),
         ]);
     }
 }

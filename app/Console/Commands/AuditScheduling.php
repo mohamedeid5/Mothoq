@@ -25,16 +25,10 @@ class AuditScheduling extends Command
             $unknownDurations->whereNull('duration_minutes');
         }
 
-        $unknownTimes = clone $active;
-        if (Schema::hasColumn('bookings', 'scheduled_at_timezone')) {
-            $unknownTimes->whereNull('scheduled_at_timezone');
-        }
-
         $this->table(['Metric', 'Count'], [
             ['services', DB::table('services')->count()],
             ['assignments_without_duration', $assignments->count()],
             ['active_bookings_without_duration', $unknownDurations->count()],
-            ['active_bookings_with_unverified_timezone', $unknownTimes->count()],
             ['total_bookings', DB::table('bookings')->count()],
         ]);
         $this->info('Read only: no durations, times, or statuses were changed.');

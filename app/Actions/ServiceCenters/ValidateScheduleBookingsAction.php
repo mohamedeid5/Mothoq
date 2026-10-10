@@ -4,7 +4,6 @@ namespace App\Actions\ServiceCenters;
 
 use App\Enums\BookingStatus;
 use App\Models\ServiceCenter;
-use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;
 
 final class ValidateScheduleBookingsAction
@@ -15,14 +14,8 @@ final class ValidateScheduleBookingsAction
     public function handle(ServiceCenter $center, string $errorKey, ?string $date = null): void
     {
         foreach ($center->bookings()->whereIn('status', [BookingStatus::Pending, BookingStatus::Accepted])->lazyById() as $booking) {
-            if ($booking->scheduled_at_timezone !== 'UTC') {
-                throw ValidationException::withMessages([
-                    $errorKey => 'يوجد حجز نشط قديم بتوقيت غير مؤكد. يجب مراجعته قبل تعديل الجدول.',
-                ]);
-            }
-
-            $start = CarbonImmutable::parse($booking->getRawOriginal('scheduled_at'), 'UTC');
-            if ($date !== null && $start->setTimezone($center->timezone)->toDateString() !== $date) {
+            $start = $booking->scheduled_at;
+            if ($date !== null && $start->toDateString() !== $date) {
                 continue;
             }
 

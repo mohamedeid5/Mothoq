@@ -10,7 +10,6 @@ use App\Mail\NewBookingReceived;
 use App\Models\Booking;
 use App\Models\ServiceCenter;
 use App\Models\User;
-use App\Support\LocalBookingTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -18,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 final class CreateBookingAction
 {
-    public function __construct(private readonly ResolveScheduleAction $schedules, private readonly LocalBookingTime $times) {}
+    public function __construct(private readonly ResolveScheduleAction $schedules) {}
 
     public function handle(User $customer, ServiceCenter $serviceCenter, CreateBookingData $data): Booking
     {
@@ -39,8 +38,13 @@ final class CreateBookingAction
                 ]);
             }
 
-            $scheduledAt = $this->times->parse($data->scheduledAt, $lockedServiceCenter->timezone);
-            if ($scheduledAt->lessThanOrEqualTo(CarbonImmutable::now('UTC'))) {
+            $scheduledAt = CarbonImmutable::parse($data->scheduledAt);
+            $localInput = str_replace('T', ' ', $data->scheduledAt);
+            $localInput = strlen($localInput) === 16 ? $localInput.':00' : $localInput;
+            if ($scheduledAt->format('Y-m-d H:i:s') !== $localInput) {
+                throw ValidationException::withMessages(['scheduled_at' => 'موعد الحجز غير صالح بتوقيت مصر.']);
+            }
+            if ($scheduledAt->lessThanOrEqualTo(CarbonImmutable::now())) {
                 throw ValidationException::withMessages(['scheduled_at' => 'موعد الحجز يجب أن يكون في المستقبل.']);
             }
 
@@ -70,7 +74,6 @@ final class CreateBookingAction
                 'customer_phone' => $data->customerPhone,
                 'scheduled_at' => $scheduledAt->format('Y-m-d H:i:s'),
                 'duration_minutes' => (int) $duration,
-                'scheduled_at_timezone' => 'UTC',
                 'notes' => $data->notes,
                 'status' => BookingStatus::Pending,
             ]);
@@ -94,7 +97,7 @@ final class CreateBookingAction
     {
         return [
             'customer:id,name,email',
-            'serviceCenter:id,name,slug,timezone,owner_id',
+            'serviceCenter:id,name,slug,owner_id',
             'serviceCenter.owner:id,name,email',
             'service:id,name,slug',
         ];

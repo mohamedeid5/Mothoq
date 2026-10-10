@@ -17,7 +17,7 @@ class SchedulingMigrationTest extends TestCase
         DB::purge('scheduling_migration_test');
 
         try {
-            $oldMigrations = array_filter(glob(database_path('migrations/*.php')), fn (string $path): bool => ! str_contains($path, '2026_10_09_16580'));
+            $oldMigrations = array_filter(glob(database_path('migrations/*.php')), fn (string $path): bool => basename($path) < '2026_10_09_165800');
             foreach ($oldMigrations as $path) {
                 (require $path)->up();
             }

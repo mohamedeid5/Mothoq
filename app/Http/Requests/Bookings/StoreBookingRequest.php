@@ -3,13 +3,9 @@
 namespace App\Http\Requests\Bookings;
 
 use App\Data\Bookings\CreateBookingData;
-use App\Models\ServiceCenter;
-use App\Support\LocalBookingTime;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Validator;
 
 class StoreBookingRequest extends FormRequest
 {
@@ -35,33 +31,9 @@ class StoreBookingRequest extends FormRequest
                 Rule::exists('services', 'id')->where('is_active', true),
             ],
             'customer_phone' => ['required', 'string', 'regex:/^01[0125][0-9]{8}$/'],
-            'scheduled_at' => ['required', 'string', 'date', 'regex:/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.0{1,6})?)?(?:Z|[+-](?:0\d|1[0-4]):[0-5]\d)?$/'],
+            'scheduled_at' => ['bail', 'required', 'string', 'date_format:Y-m-d\\TH:i,Y-m-d\\TH:i:s,Y-m-d H:i,Y-m-d H:i:s', 'after:now'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ];
-    }
-
-    /** @return array<int, callable(Validator): void> */
-    public function after(): array
-    {
-        return [function (Validator $validator): void {
-            if ($validator->errors()->has('scheduled_at')) {
-                return;
-            }
-
-            $timezone = ServiceCenter::query()->where('slug', $this->route('serviceCenter'))->value('timezone');
-            if ($timezone === null) {
-                return;
-            }
-
-            try {
-                $start = (new LocalBookingTime)->parse($this->string('scheduled_at')->toString(), $timezone);
-                if ($start->lessThanOrEqualTo(now('UTC'))) {
-                    $validator->errors()->add('scheduled_at', 'موعد الحجز يجب أن يكون في المستقبل.');
-                }
-            } catch (ValidationException $exception) {
-                $validator->errors()->add('scheduled_at', $exception->errors()['scheduled_at'][0]);
-            }
-        }];
     }
 
     public function toData(): CreateBookingData
@@ -82,6 +54,7 @@ class StoreBookingRequest extends FormRequest
             'customer_phone.required' => 'أدخل رقم الهاتف للتواصل.',
             'customer_phone.regex' => 'أدخل رقم موبايل مصري صحيحًا.',
             'scheduled_at.required' => 'اختر موعد الحجز.',
+            'scheduled_at.date_format' => 'أدخل موعدًا بتوقيت مصر بدون إزاحة زمنية، مثل 2026-09-25T09:00.',
             'scheduled_at.after' => 'موعد الحجز يجب أن يكون في المستقبل.',
             'notes.max' => 'الملاحظات يجب ألا تزيد عن 2000 حرف.',
         ];

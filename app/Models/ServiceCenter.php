@@ -27,14 +27,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'longitude',
     'status',
     'verified_at',
-    'timezone',
 ])]
 class ServiceCenter extends Model
 {
     /** @use HasFactory<ServiceCenterFactory> */
     use HasFactory, SoftDeletes;
-
-    protected $attributes = ['timezone' => 'Africa/Cairo'];
 
     public function city(): BelongsTo
     {

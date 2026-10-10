@@ -30,7 +30,7 @@ final class CustomerBookingQuery
     {
         return [
             'customer:id,name,email',
-            'serviceCenter:id,name,slug,timezone,owner_id,status',
+            'serviceCenter:id,name,slug,owner_id,status',
             'service:id,name,slug',
         ];
     }

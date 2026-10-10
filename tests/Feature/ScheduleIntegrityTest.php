@@ -116,9 +116,9 @@ class ScheduleIntegrityTest extends TestCase
 
     public function test_legacy_null_values_remain_valid(): void
     {
-        $booking = Booking::factory()->create(['duration_minutes' => null, 'scheduled_at_timezone' => null]);
+        $booking = Booking::factory()->create(['duration_minutes' => null]);
 
-        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'duration_minutes' => null, 'scheduled_at_timezone' => null]);
+        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'duration_minutes' => null]);
         $this->assertDatabaseHas('service_service_center', ['service_center_id' => $booking->service_center_id, 'service_id' => $booking->service_id, 'duration_minutes' => null]);
     }
 }
