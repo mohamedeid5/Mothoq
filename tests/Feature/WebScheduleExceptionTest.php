@@ -14,6 +14,13 @@ class WebScheduleExceptionTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutVite();
+    }
+
     /** @return array<string, array{string}> */
     public static function roles(): array
     {
