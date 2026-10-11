@@ -50,6 +50,7 @@ class ServiceCenterController extends Controller
         Gate::authorize('update', $serviceCenterModel);
 
         return view('admin.service-centers.edit', [
+            'scheduleExceptions' => $serviceCenterModel->scheduleExceptions()->orderBy('date')->paginate(15, ['*'], 'exceptions_page'),
             'serviceCenter' => $serviceCenterModel,
             'governorates' => $catalog->governoratesWithCities(),
             'services' => $catalog->services(),

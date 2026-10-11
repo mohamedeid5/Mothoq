@@ -89,6 +89,8 @@
                 'action' => route('admin.service-centers.opening-hours.update', $serviceCenter),
             ])
 
+            @include('service-centers._schedule-exceptions-form', ['routePrefix' => 'admin'])
+
             @include('service-centers._images-form', [
                 'serviceCenter' => $serviceCenter,
                 'routePrefix' => 'admin',

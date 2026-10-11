@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\Admin\CenterImageController as AdminCenterImageCont
 use App\Http\Controllers\Web\Admin\DashboardController;
 use App\Http\Controllers\Web\Admin\OpeningHourController as AdminOpeningHourController;
 use App\Http\Controllers\Web\Admin\ReviewController as AdminReviewController;
+use App\Http\Controllers\Web\Admin\ScheduleExceptionController as AdminScheduleExceptionController;
 use App\Http\Controllers\Web\Admin\ServiceCenterController as AdminServiceCenterController;
 use App\Http\Controllers\Web\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Web\Auth\NewPasswordController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Web\Owner\BookingController as OwnerBookingController;
 use App\Http\Controllers\Web\Owner\CenterImageController as OwnerCenterImageController;
 use App\Http\Controllers\Web\Owner\OpeningHourController as OwnerOpeningHourController;
+use App\Http\Controllers\Web\Owner\ScheduleExceptionController as OwnerScheduleExceptionController;
 use App\Http\Controllers\Web\Owner\ServiceCenterController as OwnerServiceCenterController;
 use App\Http\Controllers\Web\ReviewController;
 use App\Http\Controllers\Web\ServiceCenterController;
@@ -79,6 +81,10 @@ Route::middleware('auth')->group(function (): void {
             Route::patch('/centers/{serviceCenter}', [OwnerServiceCenterController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.update');
+            Route::put('/centers/{serviceCenter}/schedule-exceptions', [OwnerScheduleExceptionController::class, 'store'])
+                ->whereNumber('serviceCenter')->name('service-centers.schedule-exceptions.store');
+            Route::delete('/centers/{serviceCenter}/schedule-exceptions/{scheduleException}', [OwnerScheduleExceptionController::class, 'destroy'])
+                ->whereNumber(['serviceCenter', 'scheduleException'])->name('service-centers.schedule-exceptions.destroy');
             Route::patch('/centers/{serviceCenter}/opening-hours', [OwnerOpeningHourController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.opening-hours.update');
@@ -125,6 +131,10 @@ Route::middleware('auth')->group(function (): void {
             Route::patch('/service-centers/{serviceCenter}', [AdminServiceCenterController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.update');
+            Route::put('/service-centers/{serviceCenter}/schedule-exceptions', [AdminScheduleExceptionController::class, 'store'])
+                ->whereNumber('serviceCenter')->name('service-centers.schedule-exceptions.store');
+            Route::delete('/service-centers/{serviceCenter}/schedule-exceptions/{scheduleException}', [AdminScheduleExceptionController::class, 'destroy'])
+                ->whereNumber(['serviceCenter', 'scheduleException'])->name('service-centers.schedule-exceptions.destroy');
             Route::patch('/service-centers/{serviceCenter}/opening-hours', [AdminOpeningHourController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.opening-hours.update');
