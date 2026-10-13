@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\BookingCapacityController as AdminBookingCapacityController;
 use App\Http\Controllers\Api\V1\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\V1\Admin\CenterImageController as AdminCenterImageController;
 use App\Http\Controllers\Api\V1\Admin\OpeningHourController as AdminOpeningHourController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\CarBrandController;
 use App\Http\Controllers\Api\V1\GovernorateCityController;
 use App\Http\Controllers\Api\V1\GovernorateController;
+use App\Http\Controllers\Api\V1\Owner\BookingCapacityController as OwnerBookingCapacityController;
 use App\Http\Controllers\Api\V1\Owner\BookingController as OwnerBookingController;
 use App\Http\Controllers\Api\V1\Owner\CenterImageController as OwnerCenterImageController;
 use App\Http\Controllers\Api\V1\Owner\OpeningHourController as OwnerOpeningHourController;
@@ -95,6 +97,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 ->whereNumber(['serviceCenter', 'scheduleException'])->name('service-centers.schedule-exceptions.destroy');
             Route::patch('service-centers/{serviceCenter}/services/{service}/duration', [AdminServiceDurationController::class, 'update'])
                 ->whereNumber(['serviceCenter', 'service'])->name('service-centers.services.duration.update');
+            Route::patch('service-centers/{serviceCenter}/booking-capacity', [AdminBookingCapacityController::class, 'update'])
+                ->whereNumber('serviceCenter')->name('service-centers.booking-capacity.update');
             Route::patch('service-centers/{serviceCenter}/opening-hours', [AdminOpeningHourController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.opening-hours.update');
@@ -146,6 +150,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 ->whereNumber(['serviceCenter', 'scheduleException'])->name('service-centers.schedule-exceptions.destroy');
             Route::patch('service-centers/{serviceCenter}/services/{service}/duration', [OwnerServiceDurationController::class, 'update'])
                 ->whereNumber(['serviceCenter', 'service'])->name('service-centers.services.duration.update');
+            Route::patch('service-centers/{serviceCenter}/booking-capacity', [OwnerBookingCapacityController::class, 'update'])
+                ->whereNumber('serviceCenter')->name('service-centers.booking-capacity.update');
             Route::patch('service-centers/{serviceCenter}/opening-hours', [OwnerOpeningHourController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.opening-hours.update');

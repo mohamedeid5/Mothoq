@@ -47,6 +47,7 @@ class OwnerServiceCenterResource extends JsonResource
                 ]
                 : null,
             'status' => $this->status->value,
+            'booking_capacity' => $this->booking_capacity,
             'is_verified' => $this->verified_at !== null,
             'services' => ServiceResource::collection($this->whenLoaded('services')),
             'car_brands' => CarBrandResource::collection($this->whenLoaded('carBrands')),

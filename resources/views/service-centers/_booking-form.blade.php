@@ -25,10 +25,13 @@
         <p class="mt-3 text-xs leading-6 text-slate-600">يجب أن تنتهي الخدمة قبل الإغلاق أو عنده. قد تختلف المواعيد في التواريخ الاستثنائية، ويؤكد الخادم صلاحية الموعد.</p>
     </details>
 
-    @if ($errors->hasAny(['service_id', 'customer_phone', 'scheduled_at', 'notes', 'schedule']))
+    @if ($errors->hasAny(['service_id', 'customer_phone', 'scheduled_at', 'notes', 'schedule', 'booking_capacity']))
         <div role="alert" class="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{{ $errors->first() }}</div>
     @endif
 
+    @if ($serviceCenter->booking_capacity === null)
+        <p role="status" class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">الحجز غير متاح حاليًا حتى يحدد المركز سعة الحجوزات.</p>
+    @else
     <form method="POST" action="{{ route('bookings.store', $serviceCenter->slug) }}" class="mt-5 grid gap-4">
         @csrf
 
@@ -55,4 +58,5 @@
 
         <button type="submit" class="h-12 rounded-xl bg-brand-600 px-5 text-sm font-black text-white hover:bg-brand-500">إرسال طلب الحجز</button>
     </form>
+    @endif
 </section>

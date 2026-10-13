@@ -4,6 +4,7 @@ namespace App\Actions\Bookings;
 
 use App\Enums\BookingStatus;
 use App\Models\Booking;
+use App\Models\ServiceCenter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -12,6 +13,8 @@ final class CancelBookingAction
     public function handle(Booking $booking): Booking
     {
         return DB::transaction(function () use ($booking): Booking {
+            ServiceCenter::withTrashed()->whereKey($booking->service_center_id)->lockForUpdate()->firstOrFail();
+
             $lockedBooking = Booking::query()
                 ->whereKey($booking->id)
                 ->lockForUpdate()
@@ -33,6 +36,6 @@ final class CancelBookingAction
                 'serviceCenter:id,name,slug,owner_id',
                 'service:id,name,slug',
             ]);
-        });
+        }, 3);
     }
 }

@@ -6,6 +6,7 @@ use App\Data\Bookings\UpdateBookingStatusData;
 use App\Enums\BookingStatus;
 use App\Mail\BookingStatusUpdated;
 use App\Models\Booking;
+use App\Models\ServiceCenter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -15,6 +16,8 @@ final class UpdateBookingStatusAction
     public function handle(Booking $booking, UpdateBookingStatusData $data): Booking
     {
         $updatedBooking = DB::transaction(function () use ($booking, $data): Booking {
+            ServiceCenter::withTrashed()->whereKey($booking->service_center_id)->lockForUpdate()->firstOrFail();
+
             $lockedBooking = Booking::query()
                 ->whereKey($booking->id)
                 ->lockForUpdate()
@@ -46,7 +49,7 @@ final class UpdateBookingStatusAction
                 'serviceCenter:id,name,slug,owner_id',
                 'service:id,name,slug',
             ]);
-        });
+        }, 3);
 
         Mail::to($updatedBooking->customer)->send(new BookingStatusUpdated($updatedBooking));
 

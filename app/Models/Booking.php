@@ -53,6 +53,7 @@ class Booking extends Model
         return [
             'status' => BookingStatus::class,
             'scheduled_at' => 'immutable_datetime:Y-m-d H:i:s',
+            'end_at' => 'immutable_datetime:Y-m-d H:i:s',
             'duration_minutes' => 'integer',
             'responded_at' => 'datetime',
             'cancelled_at' => 'datetime',

@@ -36,6 +36,7 @@ class ServiceCenterFactory extends Factory
             'longitude' => fake()->longitude(25, 35),
             'status' => ServiceCenterStatus::Draft,
             'verified_at' => null,
+            'booking_capacity' => 3,
         ];
     }
 

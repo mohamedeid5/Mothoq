@@ -147,6 +147,7 @@ class ServiceCenter extends Model
         return [
             'status' => ServiceCenterStatus::class,
             'verified_at' => 'datetime',
+            'booking_capacity' => 'integer',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
         ];

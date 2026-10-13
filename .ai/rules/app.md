@@ -10,3 +10,6 @@ Resolve date exceptions before weekly hours; an absent schedule is unavailable. 
 
 ## Egypt local booking times replace the earlier UTC design
 User decision on 2026-10-10 supersedes the earlier UTC/timezone rule: booking input, storage, filters and display use Egypt local time with app.timezone Africa/Cairo. No per-center timezone or booking timezone provenance in runtime code; reject offset-bearing booking inputs. Preserve duration snapshots, exception precedence and center-row locking. Active bookings without a duration require review before conflicting schedule edits.
+
+## Booking capacity uses stored local start and end times
+User reaffirmed on 2026-10-13: compare scheduled_at and end_at directly as full Egypt-local date/time strings. No UTC conversions, timezone handling, or extra-day query margins. Never recalculate persisted booking ends from duration; only calculate the unsaved candidate end. NULL capacity blocks new bookings; unknown active durations or ends require review. Pending and accepted consume capacity. Lock centers before bookings; any future multi-center operation locks center IDs ascending.

@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 final class CreateBookingAction
 {
-    public function __construct(private readonly ResolveScheduleAction $schedules) {}
+    public function __construct(private readonly ResolveScheduleAction $schedules, private readonly ValidateBookingCapacityAction $capacity) {}
 
     public function handle(User $customer, ServiceCenter $serviceCenter, CreateBookingData $data): Booking
     {
@@ -26,6 +26,8 @@ final class CreateBookingAction
                 ->whereKey($serviceCenter->id)
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            $capacity = $this->capacity->configuredCapacity($lockedServiceCenter);
 
             $service = $lockedServiceCenter->services()
                 ->whereKey($data->serviceId)
@@ -67,6 +69,7 @@ final class CreateBookingAction
             }
 
             $this->schedules->validateBooking($lockedServiceCenter, $scheduledAt, (int) $duration);
+            $this->capacity->handle($lockedServiceCenter, $capacity, $scheduledAt, (int) $duration);
 
             $booking = $customer->bookings()->create([
                 'service_center_id' => $lockedServiceCenter->id,
