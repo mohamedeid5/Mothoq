@@ -68,3 +68,91 @@ variable "environment_parameter_path" {
   description = "SSM parameter path containing the production environment."
   type        = string
 }
+
+variable "enable_autoscaling" {
+  type    = bool
+  default = false
+}
+
+variable "project_name" {
+  type    = string
+  default = "mothoq"
+}
+
+variable "environment" {
+  type    = string
+  default = "production"
+}
+
+variable "vpc_id" {
+  type    = string
+  default = null
+}
+
+variable "public_subnet_ids" {
+  type    = list(string)
+  default = []
+}
+
+variable "private_subnet_ids" {
+  type    = list(string)
+  default = []
+}
+
+variable "cloudfront_prefix_list_id" {
+  type    = string
+  default = null
+}
+
+
+variable "alb_certificate_arn" {
+  type    = string
+  default = null
+}
+
+variable "autoscaling_release_tag" {
+  type    = string
+  default = ""
+}
+
+variable "autoscaling_min_size" {
+  type    = number
+  default = 2
+}
+
+variable "autoscaling_max_size" {
+  type    = number
+  default = 4
+}
+
+variable "autoscaling_cpu_target" {
+  type    = number
+  default = 60
+}
+
+variable "redis_node_type" {
+  type    = string
+  default = "cache.t3.micro"
+}
+
+variable "aws_account_id" {
+  type = string
+}
+
+variable "github_actions_role_name" {
+  type = string
+}
+
+variable "instance_role_arn" {
+  type = string
+}
+
+variable "alerts_topic_arn" {
+  type = string
+}
+
+variable "application_subnet_ids" {
+  description = "Private application subnets across availability zones, with outbound NAT connectivity."
+  type        = list(string)
+  default     = []
+}

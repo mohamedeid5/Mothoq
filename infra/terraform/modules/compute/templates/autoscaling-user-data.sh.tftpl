@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+export DEBIAN_FRONTEND=noninteractive
+export AWS_REGION='${aws_region}'
+umask 077
+
+apt-get update
+apt-get install -y --no-install-recommends ca-certificates curl docker.io unzip
+systemctl enable --now docker
+systemctl enable --now snap.amazon-ssm-agent.amazon-ssm-agent.service \
+  || systemctl enable --now amazon-ssm-agent.service
+
+work_directory="$(mktemp -d)"
+trap 'rm -rf "$work_directory"' EXIT
+curl --fail --location --silent --show-error --retry 3 \
+  https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o "$work_directory/aws.zip"
+unzip -q "$work_directory/aws.zip" -d "$work_directory"
+"$work_directory/aws/install"
+install -d -m 0755 /usr/local/lib/docker/cli-plugins
+curl --fail --location --silent --show-error --retry 3 \
+  'https://github.com/docker/compose/releases/download/${compose_version}/docker-compose-linux-x86_64' \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod 0755 /usr/local/lib/docker/cli-plugins/docker-compose
+
+install -d -m 0750 /opt/mothoq
+cd /opt/mothoq
+printf '%s' '${compose_file_base64}' | base64 --decode > compose.yaml
+printf '%s' '${nginx_config_base64}' | base64 --decode > nginx-origin.conf
+chmod 0644 nginx-origin.conf
+
+metadata_token="$(curl --fail --silent --show-error -X PUT \
+  -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' http://169.254.169.254/latest/api/token)"
+release="$(curl --fail --silent --show-error -H "X-aws-ec2-metadata-token: $metadata_token" \
+  http://169.254.169.254/latest/meta-data/tags/instance/Release)"
+[[ "$release" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid release tag' >&2; exit 1; }
+
+aws ssm get-parameter --name '${environment_parameter_path}' --with-decryption \
+  --query Parameter.Value --output text > .env.production
+cat > .env <<ENV
+APP_IMAGE=${app_repository_url}:$release
+NGINX_IMAGE=${nginx_repository_url}:$release
+AWS_REGION=${aws_region}
+REDIS_ENDPOINT=${redis_endpoint}
+LOG_GROUP_NAME=${log_group_name}
+ENV
+
+registry='${app_repository_url}'
+registry="$${registry%%/*}"
+aws ecr get-login-password | docker login --username AWS --password-stdin "$registry"
+docker compose pull
+docker logout "$registry" >/dev/null 2>&1
+# A new node never runs migrations. CI migrates once before replacing instances.
+ready=false
+for attempt in {1..30}; do
+  if docker compose run --rm --no-deps app php artisan app:check-scaling-readiness --no-interaction; then
+    ready=true
+    break
+  fi
+  sleep 10
+done
+[[ "$ready" == true ]] || { echo 'Shared state is not ready' >&2; exit 1; }
+
+cat > /etc/systemd/system/mothoq.service <<'UNIT'
+[Unit]
+Description=Mothoq application containers
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/mothoq
+ExecStart=/usr/bin/docker compose up -d --wait --wait-timeout 180
+ExecStop=/usr/bin/docker compose stop -t 120
+TimeoutStartSec=240
+TimeoutStopSec=150
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now mothoq.service

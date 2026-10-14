@@ -40,22 +40,22 @@ output "alerts_topic_arn" {
 
 output "nginx_5xx_alarm_name" {
   description = "CloudWatch alarm monitoring Nginx 5xx responses."
-  value       = module.observability.nginx_5xx_alarm_name
+  value       = module.monitoring.nginx_5xx_alarm_name
 }
 
 output "uptime_health_check_id" {
   description = "Route 53 health check monitoring the public HTTPS /up endpoint."
-  value       = aws_route53_health_check.application.id
+  value       = module.monitoring.uptime_health_check_id
 }
 
 output "uptime_alarm_name" {
   description = "Uptime CloudWatch alarm in us-east-1."
-  value       = aws_cloudwatch_metric_alarm.uptime.alarm_name
+  value       = module.monitoring.uptime_alarm_name
 }
 
 output "uptime_alerts_topic_arn" {
   description = "SNS topic in us-east-1; its email subscription requires confirmation."
-  value       = aws_sns_topic.uptime_alerts.arn
+  value       = module.monitoring.uptime_alerts_topic_arn
 }
 
 output "production_env_parameter" {
@@ -75,27 +75,27 @@ output "github_actions_role_arn" {
 
 output "ses_identity_arn" {
   description = "Verified SES identity used for transactional email."
-  value       = aws_ses_domain_identity.application.arn
+  value       = module.email.identity_arn
 }
 
 output "ses_configuration_set_name" {
   description = "Configuration set Laravel should select when sending SES email."
-  value       = aws_sesv2_configuration_set.application.configuration_set_name
+  value       = module.email.configuration_set_name
 }
 
 output "ses_events_topic_arn" {
   description = "SNS topic receiving SES delivery and feedback events."
-  value       = aws_sns_topic.ses_events.arn
+  value       = module.email.events_topic_arn
 }
 
 output "ses_events_queue_url" {
   description = "SQS queue URL for the SES event consumer."
-  value       = aws_sqs_queue.ses_events.url
+  value       = module.email.events_queue_url
 }
 
 output "ses_events_queue_arn" {
   description = "SQS queue ARN for scoped consumer permissions."
-  value       = aws_sqs_queue.ses_events.arn
+  value       = module.email.events_queue_arn
 }
 
 output "uploads_bucket_name" {
@@ -110,15 +110,25 @@ output "uploads_bucket_arn" {
 
 output "database_address" {
   description = "Private RDS hostname; the application is not switched to it automatically."
-  value       = aws_db_instance.application.address
+  value       = module.database.address
 }
 
 output "database_identifier" {
   description = "Identifier of the production RDS instance."
-  value       = aws_db_instance.application.identifier
+  value       = module.database.identifier
 }
 
 output "database_master_secret_arn" {
   description = "Secrets Manager ARN for the RDS-managed administrator credentials, not their value."
-  value       = aws_db_instance.application.master_user_secret[0].secret_arn
+  value       = module.database.master_secret_arn
+}
+
+output "autoscaling_group_name" {
+  value = module.compute.autoscaling_group_name
+}
+output "load_balancer_dns_name" {
+  value = module.compute.load_balancer_dns_name
+}
+output "redis_endpoint" {
+  value = module.compute.redis_endpoint
 }

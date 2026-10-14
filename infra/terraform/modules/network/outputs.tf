@@ -37,3 +37,13 @@ output "primary_availability_zone" {
   description = "Availability zone of the existing application subnet."
   value       = aws_subnet.public.availability_zone
 }
+
+output "cloudfront_prefix_list_id" {
+  value = data.aws_ec2_managed_prefix_list.cloudfront.id
+}
+
+output "application_subnet_ids" {
+  description = "Private application subnets with working outbound routes before instances bootstrap."
+  value       = [for subnet in aws_subnet.application : subnet.id]
+  depends_on  = [aws_route.application_internet, aws_route_table_association.application, aws_vpc_endpoint.s3]
+}

@@ -1,5 +1,5 @@
 resource "aws_db_instance" "application" {
-  identifier     = "${local.name}-database"
+  identifier     = "${var.name}-database"
   engine         = "mysql"
   engine_version = "8.4.11"
   instance_class = "db.t3.micro"
@@ -13,8 +13,8 @@ resource "aws_db_instance" "application" {
   storage_type          = "gp3"
   storage_encrypted     = true
 
-  db_subnet_group_name   = module.network.database_subnet_group_name
-  vpc_security_group_ids = [module.network.database_security_group_id]
+  db_subnet_group_name   = var.subnet_group_name
+  vpc_security_group_ids = [var.security_group_id]
   multi_az               = false
   publicly_accessible    = false
   port                   = 3306
@@ -27,7 +27,7 @@ resource "aws_db_instance" "application" {
 
   deletion_protection       = true
   skip_final_snapshot       = false
-  final_snapshot_identifier = "${local.name}-database-final"
+  final_snapshot_identifier = "${var.name}-database-final"
 
   auto_minor_version_upgrade   = true
   allow_major_version_upgrade  = false
@@ -37,7 +37,7 @@ resource "aws_db_instance" "application" {
   performance_insights_enabled = false
 
   tags = {
-    Name = "${local.name}-database"
+    Name = "${var.name}-database"
   }
 
   lifecycle {

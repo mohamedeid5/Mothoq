@@ -18,8 +18,3 @@ variable "alert_email" {
   type        = string
   nullable    = true
 }
-
-variable "nginx_5xx_threshold" {
-  description = "Number of Nginx 5xx responses within five minutes that triggers the alarm."
-  type        = number
-}

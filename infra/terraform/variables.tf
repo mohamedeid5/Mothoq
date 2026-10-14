@@ -135,3 +135,57 @@ variable "github_deployment_branch" {
   type        = string
   default     = "main"
 }
+
+variable "enable_autoscaling" {
+  description = "Create the ALB, shared Redis and fleet alongside the existing host."
+  type        = bool
+  default     = false
+}
+
+variable "route_autoscaling_traffic" {
+  description = "Switch CloudFront to the ALB after data migration and fleet verification."
+  type        = bool
+  default     = false
+  validation {
+    condition     = !var.route_autoscaling_traffic || var.enable_autoscaling
+    error_message = "Enable autoscaling before routing traffic to the fleet."
+  }
+}
+
+variable "autoscaling_release_tag" {
+  description = "Existing Git SHA image tag for initial fleet creation; subsequent releases are managed by CI."
+  type        = string
+  default     = ""
+}
+
+variable "autoscaling_min_size" {
+  type    = number
+  default = 2
+  validation {
+    condition     = var.autoscaling_min_size >= 2 && floor(var.autoscaling_min_size) == var.autoscaling_min_size
+    error_message = "Use at least two instances and a whole number."
+  }
+}
+
+variable "autoscaling_max_size" {
+  type    = number
+  default = 4
+  validation {
+    condition     = var.autoscaling_max_size >= var.autoscaling_min_size && floor(var.autoscaling_max_size) == var.autoscaling_max_size
+    error_message = "Maximum capacity must be a whole number no lower than minimum capacity."
+  }
+}
+
+variable "autoscaling_cpu_target" {
+  type    = number
+  default = 60
+  validation {
+    condition     = var.autoscaling_cpu_target > 0 && var.autoscaling_cpu_target < 100
+    error_message = "CPU target must be between 0 and 100 percent, exclusive."
+  }
+}
+
+variable "redis_node_type" {
+  type    = string
+  default = "cache.t3.micro"
+}

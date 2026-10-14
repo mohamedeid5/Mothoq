@@ -18,7 +18,7 @@ resource "aws_security_group" "database" {
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
-    security_groups = [aws_security_group.web.id]
+    security_groups = concat([aws_security_group.web.id], var.additional_database_security_group_ids)
   }
 
   egress = []

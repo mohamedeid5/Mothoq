@@ -9,3 +9,18 @@ terraform_operator_user = "mohamed"
 
 # Reuse an already allocated address so it is not left idle and billable.
 # existing_eip_allocation_id = "eipalloc-0123456789abcdef0"
+
+# First migrate the database to RDS and all CenterImage records/files to S3.
+# Publish an image containing app:check-scaling-readiness and migrate its schema.
+# Then create the fleet, leaving CloudFront on the existing host for verification.
+# Enabling the fleet also creates two zonal NAT gateways and their Elastic IPs.
+# App instances use private subnets; RDS/Redis subnets keep no internet default route.
+enable_autoscaling = false
+autoscaling_release_tag = ""
+autoscaling_min_size = 2
+autoscaling_max_size = 4
+autoscaling_cpu_target = 60
+redis_node_type = "cache.t3.micro"
+# Switch the old host to shared Redis or drain its queues; stop its scheduler
+# before cutover. Set GitHub variable AUTOSCALING_GROUP to the Terraform output.
+route_autoscaling_traffic = false

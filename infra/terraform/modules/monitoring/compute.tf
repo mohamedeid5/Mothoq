@@ -1,5 +1,5 @@
 resource "aws_cloudwatch_metric_alarm" "instance_status" {
-  alarm_name          = "${local.name}-instance-status"
+  alarm_name          = "${var.name}-instance-status"
   alarm_description   = "EC2 failed a status check for two consecutive minutes."
   namespace           = "AWS/EC2"
   metric_name         = "StatusCheckFailed"
@@ -12,16 +12,16 @@ resource "aws_cloudwatch_metric_alarm" "instance_status" {
   treat_missing_data  = "missing"
 
   dimensions = {
-    InstanceId = module.compute.instance_id
+    InstanceId = var.instance_id
   }
 
-  alarm_actions             = [module.observability.alerts_topic_arn]
-  ok_actions                = [module.observability.alerts_topic_arn]
+  alarm_actions             = [var.alerts_topic_arn]
+  ok_actions                = [var.alerts_topic_arn]
   insufficient_data_actions = []
 }
 
 resource "aws_cloudwatch_metric_alarm" "instance_cpu" {
-  alarm_name          = "${local.name}-instance-cpu"
+  alarm_name          = "${var.name}-instance-cpu"
   alarm_description   = "EC2 average CPU utilization is at least 85 percent for fifteen minutes."
   namespace           = "AWS/EC2"
   metric_name         = "CPUUtilization"
@@ -34,10 +34,10 @@ resource "aws_cloudwatch_metric_alarm" "instance_cpu" {
   treat_missing_data  = "missing"
 
   dimensions = {
-    InstanceId = module.compute.instance_id
+    InstanceId = var.instance_id
   }
 
-  alarm_actions             = [module.observability.alerts_topic_arn]
-  ok_actions                = [module.observability.alerts_topic_arn]
+  alarm_actions             = [var.alerts_topic_arn]
+  ok_actions                = [var.alerts_topic_arn]
   insufficient_data_actions = []
 }

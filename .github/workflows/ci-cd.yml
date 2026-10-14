@@ -28,8 +28,10 @@ jobs:
           DB_PASSWORD: test-only
           DB_ROOT_PASSWORD: test-only
         run: |
-          bash -n docker/deploy.sh
+          for script in docker/deploy*.sh; do bash -n "$script"; done
+          export REDIS_ENDPOINT=redis.example.com LOG_GROUP_NAME=/mothoq/production
           touch docker/.env.production
+          docker compose -f docker/compose.autoscaling.yaml config --quiet
           docker compose -f docker/compose.ec2.yaml config --quiet
 
   php:
@@ -148,6 +150,7 @@ jobs:
 
   deploy:
     name: Deploy production
+    timeout-minutes: 120
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs:
       - deployment-config
@@ -169,6 +172,7 @@ jobs:
       APP_REPOSITORY: mothoq/app
       NGINX_REPOSITORY: mothoq/nginx
       IMAGE_TAG: ${{ github.sha }}
+      AUTOSCALING_GROUP: ${{ vars.AUTOSCALING_GROUP }}
 
     steps:
       - name: Check out the repository
@@ -210,6 +214,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=nginx
 
       - name: Find the production instance
+        if: env.AUTOSCALING_GROUP == ''
         id: instance
         run: |
           instance_id="$(aws ec2 describe-instances \
@@ -218,7 +223,7 @@ jobs:
               Name=tag:Application,Values=mothoq \
               Name=tag:Environment,Values=production \
               Name=instance-state-name,Values=running \
-            --query 'Reservations[0].Instances[0].InstanceId' \
+            --query "Reservations[].Instances[] | [?!Tags[?Key=='aws:autoscaling:groupName']] | [0].InstanceId" \
             --output text)"
 
           if [[ -z "$instance_id" || "$instance_id" == "None" ]]; then
@@ -229,6 +234,7 @@ jobs:
           echo "instance_id=$instance_id" >> "$GITHUB_OUTPUT"
 
       - name: Prepare deployment files for SSM
+        if: env.AUTOSCALING_GROUP == ''
         run: |
           bundle="$(tar -czf - -C docker compose.ec2.yaml deploy.sh | base64 | tr -d '\n')"
           registry="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
@@ -246,6 +252,7 @@ jobs:
             }' > "$RUNNER_TEMP/mothoq-deployment.json"
 
       - name: Deploy through SSM
+        if: env.AUTOSCALING_GROUP == ''
         env:
           INSTANCE_ID: ${{ steps.instance.outputs.instance_id }}
         run: |
@@ -291,6 +298,7 @@ jobs:
           fi
 
       - name: Verify the public health endpoint
+        if: env.AUTOSCALING_GROUP == ''
         env:
           INSTANCE_ID: ${{ steps.instance.outputs.instance_id }}
         run: |
@@ -305,3 +313,7 @@ jobs:
             --retry-delay 5 \
             --retry-all-errors \
             "http://$public_ip/up" >/dev/null
+
+      - name: Roll out the Auto Scaling fleet
+        if: env.AUTOSCALING_GROUP != ''
+        run: bash docker/deploy-autoscaling.sh "$AWS_REGION" "$AUTOSCALING_GROUP" "$IMAGE_TAG"

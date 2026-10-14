@@ -9,17 +9,13 @@ resource "aws_route53_health_check" "application" {
   measure_latency   = false
 
   tags = {
-    Name = "${local.name}-uptime"
+    Name = "${var.name}-uptime"
   }
-
-  depends_on = [aws_route53_record.application_ipv4]
 }
 
 resource "aws_sns_topic" "uptime_alerts" {
   provider = aws.us_east_1
-  name     = "${local.name}-uptime-alerts"
-
-  depends_on = [module.identity]
+  name     = "${var.name}-uptime-alerts"
 }
 
 resource "aws_sns_topic_subscription" "uptime_email" {
@@ -34,7 +30,7 @@ resource "aws_sns_topic_subscription" "uptime_email" {
 resource "aws_cloudwatch_metric_alarm" "uptime" {
   provider = aws.us_east_1
 
-  alarm_name          = "${local.name}-uptime"
+  alarm_name          = "${var.name}-uptime"
   alarm_description   = "Public HTTPS /up health check is unhealthy or monitoring data is missing for two evaluation periods. This checks Laravel boot, not database or queue health."
   namespace           = "AWS/Route53"
   metric_name         = "HealthCheckStatus"

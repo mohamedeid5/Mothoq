@@ -17,3 +17,10 @@ output "github_actions_role_arn" {
   description = "IAM role assumed by GitHub Actions through OIDC."
   value       = aws_iam_role.github_actions.arn
 }
+
+output "github_actions_role_name" {
+  value = aws_iam_role.github_actions.name
+}
+output "instance_role_arn" {
+  value = aws_iam_role.instance.arn
+}
