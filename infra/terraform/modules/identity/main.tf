@@ -224,7 +224,7 @@ resource "aws_iam_role_policy" "github_actions" {
       {
         Sid      = "FindProductionInstance"
         Effect   = "Allow"
-        Action   = "ec2:DescribeInstances"
+        Action   = ["ec2:DescribeInstances", "autoscaling:DescribeAutoScalingGroups"]
         Resource = "*"
       },
       {

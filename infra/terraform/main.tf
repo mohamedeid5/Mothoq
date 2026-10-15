@@ -21,6 +21,7 @@ module "network" {
   source                             = "./modules/network"
   aws_region                         = var.aws_region
   enable_private_application_network = var.enable_autoscaling
+  legacy_ssh_cidrs                   = var.legacy_ssh_cidrs
 
   name                                   = local.name
   allowed_http_cidrs                     = var.allowed_http_cidrs

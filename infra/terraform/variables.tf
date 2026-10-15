@@ -189,3 +189,9 @@ variable "redis_node_type" {
   type    = string
   default = "cache.t3.micro"
 }
+
+variable "legacy_ssh_cidrs" {
+  description = "Existing SSH access retained on the legacy host during migration; the private fleet uses SSM."
+  type        = list(string)
+  default     = []
+}

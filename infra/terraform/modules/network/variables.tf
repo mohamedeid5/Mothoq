@@ -23,3 +23,9 @@ variable "aws_region" {
   description = "Region used for the S3 gateway endpoint."
   type        = string
 }
+
+variable "legacy_ssh_cidrs" {
+  description = "Existing administrator SSH networks retained on the legacy host during migration."
+  type        = list(string)
+  default     = []
+}

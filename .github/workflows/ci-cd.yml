@@ -185,6 +185,17 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           allowed-account-ids: ${{ env.AWS_ACCOUNT_ID }}
 
+      - name: Resolve production deployment target
+        if: env.AUTOSCALING_GROUP == ''
+        run: |
+          group_name="$(aws autoscaling describe-auto-scaling-groups \
+            --region "$AWS_REGION" \
+            --auto-scaling-group-names mothoq-production-web \
+            --query 'AutoScalingGroups[0].AutoScalingGroupName' --output text)"
+          if [[ -n "$group_name" && "$group_name" != "None" ]]; then
+            echo "AUTOSCALING_GROUP=$group_name" >> "$GITHUB_ENV"
+          fi
+
       - name: Log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 

@@ -131,6 +131,16 @@ resource "aws_security_group" "web" {
     prefix_list_ids = [data.aws_ec2_managed_prefix_list.cloudfront.id]
   }
 
+  dynamic "ingress" {
+    for_each = length(var.legacy_ssh_cidrs) == 0 ? [] : [var.legacy_ssh_cidrs]
+    content {
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = ingress.value
+    }
+  }
+
   egress {
     description = "Outbound access for package and image downloads"
     from_port   = 0
