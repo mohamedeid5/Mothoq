@@ -186,14 +186,15 @@ jobs:
           allowed-account-ids: ${{ env.AWS_ACCOUNT_ID }}
 
       - name: Resolve production deployment target
-        if: env.AUTOSCALING_GROUP == ''
         run: |
           group_name="$(aws autoscaling describe-auto-scaling-groups \
             --region "$AWS_REGION" \
-            --auto-scaling-group-names mothoq-production-web \
-            --query 'AutoScalingGroups[0].AutoScalingGroupName' --output text)"
+            --auto-scaling-group-names "${AUTOSCALING_GROUP:-mothoq-production-web}" \
+            --query 'AutoScalingGroups[?MaxSize > `0`].AutoScalingGroupName | [0]' --output text)"
           if [[ -n "$group_name" && "$group_name" != "None" ]]; then
             echo "AUTOSCALING_GROUP=$group_name" >> "$GITHUB_ENV"
+          else
+            echo "AUTOSCALING_GROUP=" >> "$GITHUB_ENV"
           fi
 
       - name: Log in to Amazon ECR
@@ -310,20 +311,12 @@ jobs:
 
       - name: Verify the public health endpoint
         if: env.AUTOSCALING_GROUP == ''
-        env:
-          INSTANCE_ID: ${{ steps.instance.outputs.instance_id }}
         run: |
-          public_ip="$(aws ec2 describe-instances \
-            --region "$AWS_REGION" \
-            --instance-ids "$INSTANCE_ID" \
-            --query 'Reservations[0].Instances[0].PublicIpAddress' \
-            --output text)"
-
           curl --fail --silent --show-error \
             --retry 12 \
             --retry-delay 5 \
             --retry-all-errors \
-            "http://$public_ip/up" >/dev/null
+            "https://mothoq.store/up" >/dev/null
 
       - name: Roll out the Auto Scaling fleet
         if: env.AUTOSCALING_GROUP != ''

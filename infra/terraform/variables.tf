@@ -162,8 +162,8 @@ variable "autoscaling_min_size" {
   type    = number
   default = 2
   validation {
-    condition     = var.autoscaling_min_size >= 2 && floor(var.autoscaling_min_size) == var.autoscaling_min_size
-    error_message = "Use at least two instances and a whole number."
+    condition     = (var.autoscaling_min_size >= 2 || (var.autoscaling_min_size == 0 && !var.route_autoscaling_traffic)) && floor(var.autoscaling_min_size) == var.autoscaling_min_size
+    error_message = "Use at least two instances, or zero while traffic is routed to the legacy instance."
   }
 }
 
