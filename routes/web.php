@@ -64,6 +64,9 @@ Route::middleware('auth')->group(function (): void {
         Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])
             ->whereNumber('booking')
             ->name('bookings.destroy');
+        Route::patch('/bookings/{booking}/reschedule', [BookingController::class, 'reschedule'])
+            ->whereNumber('booking')
+            ->name('bookings.reschedule');
     });
 
     Route::middleware('role:center_owner')
@@ -119,6 +122,9 @@ Route::middleware('auth')->group(function (): void {
             Route::patch('/bookings/{booking}', [AdminBookingController::class, 'update'])
                 ->whereNumber('booking')
                 ->name('bookings.update');
+            Route::patch('/bookings/{booking}/reschedule', [AdminBookingController::class, 'reschedule'])
+                ->whereNumber('booking')
+                ->name('bookings.reschedule');
             Route::get('/service-centers', [AdminServiceCenterController::class, 'index'])
                 ->name('service-centers.index');
             Route::get('/reviews', [AdminReviewController::class, 'index'])

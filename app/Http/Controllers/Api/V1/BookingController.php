@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Bookings\CancelBookingAction;
 use App\Actions\Bookings\CreateBookingAction;
+use App\Actions\Bookings\RescheduleBookingAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Bookings\RescheduleBookingRequest;
 use App\Http\Requests\Bookings\StoreBookingRequest;
 use App\Http\Resources\Api\V1\BookingResource;
 use App\Models\Booking;
@@ -56,5 +58,15 @@ class BookingController extends Controller
         Gate::authorize('cancel', $bookingModel);
 
         return new BookingResource($cancelBooking->handle($bookingModel));
+    }
+
+    public function reschedule(RescheduleBookingRequest $request, int $booking, RescheduleBookingAction $rescheduleBooking): BookingResource
+    {
+        /** @var User $customer */
+        $customer = $request->user();
+        $bookingModel = $this->bookings->findForCustomerOrFail($customer, $booking);
+        Gate::authorize('reschedule', $bookingModel);
+
+        return new BookingResource($rescheduleBooking->handle($bookingModel, $request->string('scheduled_at')->toString()));
     }
 }

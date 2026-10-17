@@ -193,4 +193,63 @@ class BookingControllerTest extends TestCase
 
         $this->assertSame(BookingStatus::Accepted, $booking->fresh()->status);
     }
+
+    public function test_customer_can_reschedule_from_bookings_page(): void
+    {
+        $this->travelTo('2026-09-24');
+        $customer = User::factory()->create();
+        $center = ServiceCenter::factory()->published()->create(['booking_capacity' => 1]);
+        OpeningHour::factory()->for($center)->create(['day_of_week' => DayOfWeek::Friday, 'opens_at' => '09:00', 'closes_at' => '18:00']);
+        $booking = Booking::factory()->for($customer, 'customer')->for($center)->create([
+            'scheduled_at' => '2026-09-25 09:00:00', 'duration_minutes' => 60,
+        ]);
+
+        $this->actingAs($customer)->get(route('bookings.index'))
+            ->assertOk()
+            ->assertSee('تغيير موعد الحجز')
+            ->assertSee(route('bookings.reschedule', $booking));
+
+        $this->patch(route('bookings.reschedule', $booking), [
+            'scheduled_at' => '2026-09-25T09:30',
+        ])->assertRedirect()->assertSessionHas('success', 'تم تغيير موعد الحجز بنجاح.');
+
+        $this->assertSame('2026-09-25 09:30:00', $booking->fresh()->scheduled_at->format('Y-m-d H:i:s'));
+        $this->assertDatabaseCount('bookings', 1);
+    }
+
+    public function test_failed_web_reschedule_preserves_booking_and_shows_form_error(): void
+    {
+        $this->travelTo('2026-09-24');
+        $customer = User::factory()->create();
+        $center = ServiceCenter::factory()->published()->create(['booking_capacity' => 1]);
+        OpeningHour::factory()->for($center)->create(['day_of_week' => DayOfWeek::Friday, 'opens_at' => '09:00', 'closes_at' => '18:00']);
+        $booking = Booking::factory()->for($customer, 'customer')->for($center)->create([
+            'scheduled_at' => '2026-09-25 09:00:00', 'duration_minutes' => 60,
+        ]);
+        Booking::factory()->for($center)->create(['scheduled_at' => '2026-09-25 11:00:00', 'duration_minutes' => 60]);
+
+        $this->actingAs($customer)->followingRedirects()->from(route('bookings.index'))
+            ->patch(route('bookings.reschedule', $booking), [
+                'reschedule_booking_id' => $booking->id,
+                'scheduled_at' => '2026-09-25T11:30',
+            ])->assertOk()
+            ->assertSee('سعة المركز لا تسمح بالحجوزات المتزامنة في هذا الموعد.')
+            ->assertSee('value="2026-09-25T11:30"', false);
+        $this->assertSame('2026-09-25 09:00:00', $booking->fresh()->scheduled_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_reschedule_form_is_hidden_for_processed_bookings_and_other_customers(): void
+    {
+        $customer = User::factory()->create();
+        $accepted = Booking::factory()->accepted()->for($customer, 'customer')->create();
+        $other = Booking::factory()->create();
+
+        $this->actingAs($customer)->get(route('bookings.index'))
+            ->assertOk()
+            ->assertDontSee(route('bookings.reschedule', $accepted))
+            ->assertDontSee(route('bookings.reschedule', $other));
+
+        $this->patch(route('bookings.reschedule', $other), ['scheduled_at' => now()->addDay()->format('Y-m-d\TH:i')])
+            ->assertNotFound();
+    }
 }

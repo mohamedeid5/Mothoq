@@ -40,6 +40,12 @@ class BookingPolicy
             && $booking->status === BookingStatus::Pending;
     }
 
+    public function reschedule(User $user, Booking $booking): bool
+    {
+        return $user->role === UserRole::Customer
+            && $booking->customer_id === $user->id;
+    }
+
     public function updateStatus(User $user, Booking $booking): bool
     {
         return $user->role === UserRole::CenterOwner

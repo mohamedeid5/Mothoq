@@ -30,6 +30,8 @@
 
                         <div class="mt-4 grid gap-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 sm:grid-cols-2"><p><strong class="text-slate-800">الهاتف:</strong> <span dir="ltr">{{ $booking->customer_phone }}</span></p><p><strong class="text-slate-800">تاريخ الطلب:</strong> {{ $booking->created_at->format('Y-m-d') }}</p>@if ($booking->notes)<p class="sm:col-span-2"><strong class="text-slate-800">ملاحظاتك:</strong> {{ $booking->notes }}</p>@endif @if ($booking->status_note)<p class="sm:col-span-2"><strong class="text-slate-800">رد المركز:</strong> {{ $booking->status_note }}</p>@endif</div>
 
+                        @include('bookings._reschedule-form', ['booking' => $booking, 'rescheduleRouteName' => 'bookings.reschedule'])
+
                         @if ($booking->status === App\Enums\BookingStatus::Pending)
                             <form method="POST" action="{{ route('bookings.destroy', $booking) }}" class="mt-4" onsubmit="return confirm('هل تريد إلغاء طلب الحجز؟')">@csrf @method('DELETE')<button class="text-sm font-black text-red-600 hover:text-red-500">إلغاء الحجز</button></form>
                         @endif

@@ -108,6 +108,78 @@ class BookingCapacityConcurrencyTest extends TestCase
         }
     }
 
+    /** @return array<string, array{string}> */
+    public static function rescheduleRaces(): array
+    {
+        return [
+            'two reschedules compete for one slot' => ['reschedule'],
+            'creation competes with reschedule' => ['create'],
+        ];
+    }
+
+    #[DataProvider('rescheduleRaces')]
+    public function test_rescheduling_competes_safely_for_one_slot(string $secondOperation): void
+    {
+        $center = ServiceCenter::factory()->published()->create(['booking_capacity' => 1]);
+        $service = Service::factory()->create();
+        $center->services()->attach($service, ['duration_minutes' => 60]);
+        OpeningHour::factory()->for($center)->create(['day_of_week' => DayOfWeek::Friday]);
+        $firstBooking = Booking::factory()->for($center)->create(['scheduled_at' => '2026-09-25 09:00:00', 'duration_minutes' => 60]);
+        $secondBooking = $secondOperation === 'reschedule'
+            ? Booking::factory()->for($center)->create(['scheduled_at' => '2026-09-25 12:00:00', 'duration_minutes' => 60])
+            : null;
+        $customer = User::factory()->create();
+        $processes = [];
+        DB::beginTransaction();
+        ServiceCenter::query()->whereKey($center->id)->lockForUpdate()->firstOrFail();
+
+        try {
+            $processes[] = $this->worker('reschedule', $center->id, $service->id, $customer->id, $firstBooking->id);
+            $processes[] = $this->worker($secondOperation, $center->id, $service->id, $customer->id, $secondBooking?->id);
+            foreach ($processes as $process) {
+                $process->start();
+            }
+
+            $deadline = microtime(true) + 15;
+            do {
+                $waiting = DB::selectOne('SELECT COUNT(*) AS waiting FROM performance_schema.data_lock_waits')->waiting;
+                if ((int) $waiting >= 2) {
+                    break;
+                }
+                foreach ($processes as $process) {
+                    if (! $process->isRunning()) {
+                        $this->fail('Worker exited before waiting for center lock: '.$process->getOutput().$process->getErrorOutput());
+                    }
+                }
+                usleep(10000);
+            } while (microtime(true) < $deadline);
+            $this->assertGreaterThanOrEqual(2, (int) $waiting);
+            DB::commit();
+
+            $results = [];
+            foreach ($processes as $process) {
+                $process->wait();
+                $this->assertTrue($process->isSuccessful(), $process->getOutput().$process->getErrorOutput());
+                $results[] = trim($process->getOutput());
+            }
+            sort($results);
+            $this->assertSame(['ok', 'rejected'], $results);
+            $this->assertSame(1, $center->bookings()
+                ->whereIn('status', ['pending', 'accepted'])
+                ->where('scheduled_at', '2026-09-25 10:00:00')
+                ->count());
+        } finally {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            foreach ($processes as $process) {
+                if ($process->isRunning()) {
+                    $process->stop();
+                }
+            }
+        }
+    }
+
     private function worker(string $operation, int $centerId, int $serviceId, int $customerId, ?int $bookingId): Process
     {
         $code = <<<'WORKER'
@@ -128,6 +200,9 @@ try {
         'cancel' => app(App\Actions\Bookings\CancelBookingAction::class)->handle(App\Models\Booking::findOrFail($bookingId)),
         'accept' => app(App\Actions\Bookings\UpdateBookingStatusAction::class)->handle(
             App\Models\Booking::findOrFail($bookingId), new App\Data\Bookings\UpdateBookingStatusData(App\Enums\BookingStatus::Accepted, null),
+        ),
+        'reschedule' => app(App\Actions\Bookings\RescheduleBookingAction::class)->handle(
+            App\Models\Booking::findOrFail($bookingId), '2026-09-25T10:00',
         ),
     };
     echo 'ok';
