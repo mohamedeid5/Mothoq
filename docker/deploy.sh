@@ -23,6 +23,7 @@ aws ecr get-login-password --region "$AWS_REGION" \
   | docker login --username AWS --password-stdin "$registry"
 docker compose --project-directory /opt/mothoq --env-file .env.production -f "$compose_file" config --quiet
 docker compose --project-directory /opt/mothoq --env-file .env.production -f "$compose_file" pull
+docker compose --project-directory /opt/mothoq --env-file .env.production -f "$compose_file" up -d --wait mysql
 
 if [[ "$compose_file" != /opt/mothoq/compose.yaml ]]; then
   cp compose.yaml compose.previous.yaml
@@ -34,6 +35,7 @@ docker compose --env-file .env.production run --rm --no-deps --user root --entry
   -c 'chown www-data:www-data /var/www/html/storage/app/public; chmod 755 /var/www/html/storage/app/public'
 docker compose --env-file .env.production run --rm app php artisan migrate --force
 docker compose --env-file .env.production up -d --remove-orphans --wait --wait-timeout 180
+docker compose --env-file .env.production restart nginx
 curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors http://127.0.0.1/up >/dev/null
 /usr/local/bin/mothoq-enable-https
 
