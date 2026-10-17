@@ -235,7 +235,7 @@ jobs:
               Name=tag:Application,Values=mothoq \
               Name=tag:Environment,Values=production \
               Name=instance-state-name,Values=running \
-            --query "Reservations[].Instances[] | [?!Tags[?Key=='aws:autoscaling:groupName']] | [0].InstanceId" \
+            --query "Reservations[].Instances[?!contains(Tags[].Key, 'aws:autoscaling:groupName')].InstanceId | [0]" \
             --output text)"
 
           if [[ -z "$instance_id" || "$instance_id" == "None" ]]; then
