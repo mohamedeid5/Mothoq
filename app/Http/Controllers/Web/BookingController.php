@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Web;
 
 use App\Actions\Bookings\CancelBookingAction;
 use App\Actions\Bookings\CreateBookingAction;
+use App\Actions\Bookings\RescheduleBookingAction;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Bookings\RescheduleBookingRequest;
 use App\Http\Requests\Bookings\StoreBookingRequest;
 use App\Models\Booking;
 use App\Models\User;
@@ -59,5 +61,17 @@ class BookingController extends Controller
         $cancelBooking->handle($bookingModel);
 
         return back()->with('success', 'تم إلغاء الحجز بنجاح.');
+    }
+
+    public function reschedule(RescheduleBookingRequest $request, int $booking, RescheduleBookingAction $rescheduleBooking): RedirectResponse
+    {
+        /** @var User $customer */
+        $customer = $request->user();
+        $bookingModel = $this->bookings->findForCustomerOrFail($customer, $booking);
+        Gate::authorize('reschedule', $bookingModel);
+
+        $rescheduleBooking->handle($bookingModel, $request->string('scheduled_at')->toString());
+
+        return back()->with('success', 'تم تغيير موعد الحجز بنجاح.');
     }
 }

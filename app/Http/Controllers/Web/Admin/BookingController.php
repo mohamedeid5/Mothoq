@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Web\Admin;
 
+use App\Actions\Bookings\RescheduleBookingAction;
 use App\Actions\Bookings\UpdateBookingStatusAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Bookings\IndexBookingRequest;
+use App\Http\Requests\Bookings\RescheduleBookingRequest;
 use App\Http\Requests\Bookings\UpdateBookingStatusRequest;
 use App\Models\Booking;
 use App\Queries\Bookings\AdminBookingQuery;
@@ -40,5 +42,15 @@ class BookingController extends Controller
         $updateStatus->handle($bookingModel, $request->toData());
 
         return back()->with('success', 'تم تحديث حالة الحجز بنجاح.');
+    }
+
+    public function reschedule(RescheduleBookingRequest $request, int $booking, RescheduleBookingAction $rescheduleBooking): RedirectResponse
+    {
+        $bookingModel = $this->bookings->findOrFail($booking);
+        Gate::authorize('reschedule', $bookingModel);
+
+        $rescheduleBooking->handle($bookingModel, $request->string('scheduled_at')->toString());
+
+        return back()->with('success', 'تم تغيير موعد الحجز بنجاح.');
     }
 }
