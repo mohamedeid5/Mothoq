@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Web;
 
 use App\Actions\Bookings\CancelBookingAction;
-use App\Actions\Bookings\CreateBookingAction;
+use App\Actions\Bookings\CreateIdempotentBookingAction;
 use App\Actions\Bookings\RescheduleBookingAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Bookings\RescheduleBookingRequest;
 use App\Http\Requests\Bookings\StoreBookingRequest;
 use App\Models\Booking;
+use App\Models\ServiceCenter;
 use App\Models\User;
 use App\Queries\Bookings\CustomerBookingQuery;
-use App\Queries\ServiceCenters\PublicServiceCenterQuery;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,15 +36,20 @@ class BookingController extends Controller
     public function store(
         StoreBookingRequest $request,
         string $serviceCenter,
-        PublicServiceCenterQuery $serviceCenters,
-        CreateBookingAction $createBooking,
+        CreateIdempotentBookingAction $createBooking,
     ): RedirectResponse {
-        $serviceCenterModel = $serviceCenters->findBySlugOrFail($serviceCenter);
-        Gate::authorize('create', [Booking::class, $serviceCenterModel]);
+        $serviceCenterModel = ServiceCenter::withTrashed()->where('slug', $serviceCenter)->firstOrFail();
 
         /** @var User $customer */
         $customer = $request->user();
-        $createBooking->handle($customer, $serviceCenterModel, $request->toData());
+        $result = $createBooking->handle($customer, $serviceCenterModel, $request->toData(), $request->idempotencyKey());
+
+        if ($result->getStatusCode() !== 201) {
+            $message = $result->getData(true)['message'] ?? 'تعذر إكمال طلب الحجز. حاول مجددًا.';
+
+            return back()->withErrors(['idempotency_key' => $message])
+                ->withInput($result->getStatusCode() === 503 ? $request->all() : $request->except('idempotency_key'));
+        }
 
         return redirect()
             ->route('bookings.index')

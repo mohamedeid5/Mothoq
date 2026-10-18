@@ -3,16 +3,16 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Bookings\CancelBookingAction;
-use App\Actions\Bookings\CreateBookingAction;
+use App\Actions\Bookings\CreateIdempotentBookingAction;
 use App\Actions\Bookings\RescheduleBookingAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Bookings\RescheduleBookingRequest;
 use App\Http\Requests\Bookings\StoreBookingRequest;
 use App\Http\Resources\Api\V1\BookingResource;
 use App\Models\Booking;
+use App\Models\ServiceCenter;
 use App\Models\User;
 use App\Queries\Bookings\CustomerBookingQuery;
-use App\Queries\ServiceCenters\PublicServiceCenterQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -35,19 +35,14 @@ class BookingController extends Controller
     public function store(
         StoreBookingRequest $request,
         string $serviceCenter,
-        PublicServiceCenterQuery $serviceCenters,
-        CreateBookingAction $createBooking,
+        CreateIdempotentBookingAction $createBooking,
     ): JsonResponse {
-        $serviceCenterModel = $serviceCenters->findBySlugOrFail($serviceCenter);
-        Gate::authorize('create', [Booking::class, $serviceCenterModel]);
+        $serviceCenterModel = ServiceCenter::withTrashed()->where('slug', $serviceCenter)->firstOrFail();
 
         /** @var User $customer */
         $customer = $request->user();
-        $booking = $createBooking->handle($customer, $serviceCenterModel, $request->toData());
 
-        return (new BookingResource($booking))
-            ->response()
-            ->setStatusCode(201);
+        return $createBooking->handle($customer, $serviceCenterModel, $request->toData(), $request->idempotencyKey());
     }
 
     public function destroy(Request $request, int $booking, CancelBookingAction $cancelBooking): BookingResource

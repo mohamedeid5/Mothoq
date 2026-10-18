@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class BookingControllerTest extends TestCase
@@ -32,7 +33,7 @@ class BookingControllerTest extends TestCase
         OpeningHour::factory()->for($center)->create(['day_of_week' => DayOfWeek::Friday]);
 
         $this->actingWithToken($customer)
-            ->postJson(route('api.v1.bookings.store', $center->slug), [
+            ->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [
                 'service_id' => $service->id,
                 'customer_phone' => '01012345678',
                 'scheduled_at' => '2026-09-25T11:00',
@@ -57,7 +58,7 @@ class BookingControllerTest extends TestCase
         $center = ServiceCenter::factory()->published()->create();
 
         $this->actingWithToken($customer)
-            ->postJson(route('api.v1.bookings.store', $center->slug), [])
+            ->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['service_id', 'customer_phone', 'scheduled_at'])
             ->assertJsonPath('errors.service_id.0', 'اختر الخدمة المطلوبة.');

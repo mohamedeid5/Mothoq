@@ -15,6 +15,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -55,7 +56,7 @@ class BookingCapacityTest extends TestCase
         }
         Mail::fake();
 
-        $response = $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), [
+        $response = $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [
             'service_id' => $service->id, 'customer_phone' => '01012345678', 'scheduled_at' => '2026-09-25T'.$start,
             'duration_minutes' => 1,
         ]);
@@ -76,7 +77,7 @@ class BookingCapacityTest extends TestCase
         [$center, $service] = $this->center(null);
         Mail::fake();
 
-        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), [
+        $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [
             'service_id' => $service->id, 'customer_phone' => '01012345678', 'scheduled_at' => '2026-09-25T10:00',
         ])->assertUnprocessable()->assertJsonValidationErrors('booking_capacity');
 
@@ -158,7 +159,7 @@ class BookingCapacityTest extends TestCase
         $booking = Booking::factory()->for($center)->create(['scheduled_at' => '2026-09-25 10:00:00', 'duration_minutes' => 60]);
         Mail::fake();
         $this->actingAs($booking->customer)->deleteJson(route('api.v1.bookings.destroy', $booking))->assertOk();
-        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), [
+        $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [
             'service_id' => $service->id, 'customer_phone' => '01012345678', 'scheduled_at' => '2026-09-25T10:00',
         ])->assertCreated();
         $this->actingAs($center->owner)->patchJson(route('api.v1.owner.bookings.update', $booking), ['status' => 'accepted'])
@@ -196,7 +197,7 @@ class BookingCapacityTest extends TestCase
         Booking::factory()->create(['scheduled_at' => '2026-09-25 10:00:00', 'duration_minutes' => 60]);
         Mail::fake();
 
-        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), [
+        $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [
             'service_id' => $service->id, 'customer_phone' => '01012345678', 'scheduled_at' => '2026-09-25T10:00',
         ])->assertCreated();
 
@@ -210,7 +211,7 @@ class BookingCapacityTest extends TestCase
         Booking::factory()->for($center)->create(['scheduled_at' => '2026-08-01 10:00:00', 'duration_minutes' => null]);
         Mail::fake();
 
-        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), [
+        $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [
             'service_id' => $service->id, 'customer_phone' => '01012345678', 'scheduled_at' => '2026-09-25T10:00',
         ])->assertUnprocessable()->assertJsonValidationErrors('booking_capacity');
 
@@ -228,7 +229,7 @@ class BookingCapacityTest extends TestCase
         ]);
         Mail::fake();
 
-        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), [
+        $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [
             'service_id' => $service->id, 'customer_phone' => '01012345678', 'scheduled_at' => '2026-10-30T00:00',
         ])->assertUnprocessable()->assertJsonValidationErrors('booking_capacity');
 

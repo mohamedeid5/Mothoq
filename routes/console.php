@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('horizon:snapshot')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
+Schedule::command('bookings:prune-idempotency-keys')->hourly()->onOneServer()->withoutOverlapping();

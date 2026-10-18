@@ -9,6 +9,7 @@ use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -101,6 +102,7 @@ class WebBookingCapacityTest extends TestCase
 
         $this->actingAs(User::factory()->create())->from(route('service-centers.show', $center->slug))->followingRedirects()
             ->post(route('bookings.store', $center->slug), [
+                'idempotency_key' => (string) Str::uuid(),
                 'service_id' => $service->id, 'customer_phone' => '01012345678', 'scheduled_at' => '2026-09-25T10:00',
             ])->assertOk()->assertSee('سعة المركز لا تسمح');
 

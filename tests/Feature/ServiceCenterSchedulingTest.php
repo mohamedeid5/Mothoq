@@ -18,6 +18,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -48,7 +49,7 @@ class ServiceCenterSchedulingTest extends TestCase
         [$center, $service] = $this->centerWithService($duration);
         Mail::fake();
 
-        $response = $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), [
+        $response = $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [
             ...$this->bookingPayload($service, $start),
             'duration_minutes' => 1,
         ]);
@@ -91,7 +92,7 @@ class ServiceCenterSchedulingTest extends TestCase
         }
         Mail::fake();
 
-        $response = $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, $start));
+        $response = $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, $start));
 
         $response->assertStatus($status);
         $this->assertDatabaseCount('bookings', $status === 201 ? 1 : 0);
@@ -107,7 +108,7 @@ class ServiceCenterSchedulingTest extends TestCase
         [$center, $service] = $this->centerWithService(null);
         Mail::fake();
 
-        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), [
+        $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [
             ...$this->bookingPayload($service, '2026-09-25T12:00'), 'duration_minutes' => 30,
         ])->assertUnprocessable()->assertJsonValidationErrors('service_id');
 
@@ -125,8 +126,8 @@ class ServiceCenterSchedulingTest extends TestCase
         $customer = User::factory()->create();
         Mail::fake();
         $payload = $this->bookingPayload($service, '2026-09-25T12:00');
-        $this->actingAs($customer)->postJson(route('api.v1.bookings.store', $center->slug), $payload)->assertCreated()->assertJsonPath('data.duration_minutes', 45);
-        $this->actingAs($customer)->postJson(route('api.v1.bookings.store', $other->slug), $payload)->assertCreated()->assertJsonPath('data.duration_minutes', 90);
+        $this->actingAs($customer)->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), $payload)->assertCreated()->assertJsonPath('data.duration_minutes', 45);
+        $this->actingAs($customer)->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $other->slug), $payload)->assertCreated()->assertJsonPath('data.duration_minutes', 90);
 
         $this->actingAs($center->owner)->patchJson(route('api.v1.owner.service-centers.services.duration.update', [$center, $service]), ['duration_minutes' => 120])->assertOk()->assertJsonPath('data.duration_minutes', 120);
 
@@ -348,7 +349,7 @@ class ServiceCenterSchedulingTest extends TestCase
         }
         Mail::fake();
 
-        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, $start))->assertStatus($status);
+        $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, $start))->assertStatus($status);
 
         $this->assertDatabaseCount('bookings', $status === 201 ? 1 : 0);
         if ($storedTime !== null) {
@@ -402,9 +403,9 @@ class ServiceCenterSchedulingTest extends TestCase
         [$center, $service] = $this->centerWithService(30);
         Mail::fake();
         $this->actingAs(User::factory()->create());
-        $this->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25T09:00'))->assertCreated();
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25T09:00'))->assertCreated();
 
-        $this->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25 09:00:00'))->assertUnprocessable()
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25 09:00:00'))->assertUnprocessable()
             ->assertJsonPath('errors.scheduled_at.0', 'لديك حجز قائم في نفس المركز وفي نفس الموعد.');
 
         $this->assertDatabaseCount('bookings', 1);
@@ -419,7 +420,7 @@ class ServiceCenterSchedulingTest extends TestCase
         $center->scheduleExceptions()->create(['date' => '2026-09-25', 'is_closed' => false, 'opens_at' => '01:00', 'closes_at' => '05:00']);
         Mail::fake();
 
-        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25T01:30:00'))
+        $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25T01:30:00'))
             ->assertCreated()->assertJsonPath('data.scheduled_at', '2026-09-25 01:30:00');
 
         $this->assertDatabaseHas('bookings', ['scheduled_at' => '2026-09-25 01:30:00']);
@@ -431,10 +432,10 @@ class ServiceCenterSchedulingTest extends TestCase
         [$center, $service] = $this->centerWithService(30);
         $customer = User::factory()->create();
         Mail::fake();
-        $this->actingAs($customer)->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25T17:30'))->assertCreated();
+        $this->actingAs($customer)->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25T17:30'))->assertCreated();
         $this->actingAs($center->owner)->patchJson(route('api.v1.owner.service-centers.services.duration.update', [$center, $service]), ['duration_minutes' => 90])->assertOk();
 
-        $this->actingAs($customer)->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-10-02T17:30'))->assertUnprocessable()->assertJsonValidationErrors('scheduled_at');
+        $this->actingAs($customer)->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-10-02T17:30'))->assertUnprocessable()->assertJsonValidationErrors('scheduled_at');
 
         $this->assertDatabaseCount('bookings', 1);
         $this->assertDatabaseHas('bookings', ['duration_minutes' => 30]);
@@ -482,7 +483,7 @@ class ServiceCenterSchedulingTest extends TestCase
         [$center, $service] = $this->centerWithService(30);
         Mail::fake();
 
-        $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25 09:00:00'))
+        $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, '2026-09-25 09:00:00'))
             ->assertCreated()->assertJsonPath('data.scheduled_at', '2026-09-25 09:00:00')->assertJsonPath('data.ends_at', '2026-09-25 09:30:00');
 
         $this->assertDatabaseHas('bookings', ['scheduled_at' => '2026-09-25 09:00:00']);
@@ -502,7 +503,7 @@ class ServiceCenterSchedulingTest extends TestCase
         [$center, $service] = $this->centerWithService(30);
         Mail::fake();
 
-        $response = $this->actingAs(User::factory()->create())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, $start));
+        $response = $this->actingAs(User::factory()->create())->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), $this->bookingPayload($service, $start));
 
         $response->assertStatus($status);
         $this->assertDatabaseCount('bookings', $status === 201 ? 1 : 0);

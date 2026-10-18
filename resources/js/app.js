@@ -70,3 +70,17 @@ document.querySelectorAll('[data-schedule-exception-form]').forEach((form) => {
         });
     });
 });
+
+document.querySelectorAll('[data-booking-form]').forEach((form) => {
+    form.addEventListener('input', (event) => {
+        if (event.target.name !== 'idempotency_key' && crypto.randomUUID) {
+            form.elements.idempotency_key.value = crypto.randomUUID();
+        }
+    });
+
+    form.addEventListener('change', (event) => {
+        if (event.target.name !== 'idempotency_key' && crypto.randomUUID) {
+            form.elements.idempotency_key.value = crypto.randomUUID();
+        }
+    });
+});

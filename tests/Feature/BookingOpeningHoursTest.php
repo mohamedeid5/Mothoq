@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -45,7 +46,7 @@ class BookingOpeningHoursTest extends TestCase
         Mail::fake();
 
         $response = $this->withToken($customer->createToken('Test')->plainTextToken)
-            ->postJson(route('api.v1.bookings.store', $center->slug), [
+            ->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [
                 'service_id' => $service->id,
                 'customer_phone' => '01012345678',
                 'scheduled_at' => $scheduledAt,
@@ -98,6 +99,7 @@ class BookingOpeningHoursTest extends TestCase
         Mail::fake();
         $this->actingAs($customer)->from(route('service-centers.show', $center->slug))
             ->post(route('bookings.store', $center->slug), [
+                'idempotency_key' => (string) Str::uuid(),
                 'service_id' => $service->id,
                 'customer_phone' => '01012345678',
                 'scheduled_at' => '2026-09-25T12:00',
@@ -137,7 +139,7 @@ class BookingOpeningHoursTest extends TestCase
         Mail::fake();
 
         $this->withToken($customer->createToken('Test')->plainTextToken)
-            ->postJson(route('api.v1.bookings.store', $center->slug), [
+            ->withHeader('Idempotency-Key', (string) Str::uuid())->postJson(route('api.v1.bookings.store', $center->slug), [
                 'service_id' => $service->id,
                 'customer_phone' => '01012345678',
                 'scheduled_at' => '2026-09-24T22:00:00',

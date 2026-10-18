@@ -13,6 +13,7 @@ use App\Models\ServiceCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class BookingControllerTest extends TestCase
@@ -44,6 +45,7 @@ class BookingControllerTest extends TestCase
 
         $this->actingAs($customer)
             ->post(route('bookings.store', $serviceCenter->slug), [
+                'idempotency_key' => (string) Str::uuid(),
                 'service_id' => $service->id,
                 'customer_phone' => '01012345678',
                 'scheduled_at' => '2026-09-25T11:00',
@@ -75,6 +77,82 @@ class BookingControllerTest extends TestCase
         );
     }
 
+    public function test_repeating_the_same_web_form_creates_one_booking_and_sends_one_set_of_emails(): void
+    {
+        $this->travelTo('2026-09-24 10:00:00');
+        $customer = User::factory()->create();
+        $service = Service::factory()->create();
+        $center = ServiceCenter::factory()->published()->create();
+        $center->services()->attach($service, ['duration_minutes' => 30]);
+        OpeningHour::factory()->for($center)->create(['day_of_week' => DayOfWeek::Friday]);
+        Mail::fake();
+
+        $page = $this->actingAs($customer)->get(route('service-centers.show', $center->slug))->assertOk();
+        $this->assertMatchesRegularExpression('/name="idempotency_key" value="[a-f0-9-]{36}"/', $page->getContent());
+        preg_match('/name="idempotency_key" value="([a-f0-9-]{36})"/', $page->getContent(), $matches);
+
+        $payload = [
+            'idempotency_key' => $matches[1],
+            'booking_center_slug' => $center->slug,
+            'service_id' => $service->id,
+            'customer_phone' => '01012345678',
+            'scheduled_at' => '2026-09-25T09:00',
+        ];
+
+        $this->post(route('bookings.store', $center->slug), $payload)->assertRedirect(route('bookings.index'));
+        $this->travelTo('2026-09-25 09:30:00');
+        $this->post(route('bookings.store', $center->slug), $payload)->assertRedirect(route('bookings.index'));
+
+        $this->assertDatabaseCount('bookings', 1);
+        $this->assertDatabaseCount('idempotency_keys', 1);
+        Mail::assertQueued(BookingCreatedConfirmation::class, 1);
+        Mail::assertQueued(NewBookingReceived::class, 1);
+    }
+
+    public function test_web_form_preserves_its_key_after_validation_error_and_rejects_changed_replay(): void
+    {
+        $this->travelTo('2026-09-24 10:00:00');
+        $customer = User::factory()->create();
+        $service = Service::factory()->create();
+        $center = ServiceCenter::factory()->published()->create();
+        $center->services()->attach($service, ['duration_minutes' => 30]);
+        OpeningHour::factory()->for($center)->create(['day_of_week' => DayOfWeek::Friday]);
+        $key = (string) Str::uuid();
+        $payload = [
+            'idempotency_key' => $key,
+            'booking_center_slug' => $center->slug,
+            'service_id' => $service->id,
+            'customer_phone' => '123',
+            'scheduled_at' => '2026-09-25T11:00',
+        ];
+
+        $this->actingAs($customer)->from(route('service-centers.show', $center->slug))
+            ->post(route('bookings.store', $center->slug), $payload)
+            ->assertSessionHasErrors('customer_phone');
+        $this->get(route('service-centers.show', $center->slug))
+            ->assertSee('name="idempotency_key" value="'.$key.'"', false);
+
+        $payload['customer_phone'] = '01012345678';
+        $this->post(route('bookings.store', $center->slug), $payload)->assertRedirect(route('bookings.index'));
+        $payload['scheduled_at'] = '2026-09-25T12:00';
+        $this->post(route('bookings.store', $center->slug), $payload)->assertSessionHasErrors('idempotency_key');
+        $this->assertDatabaseCount('bookings', 1);
+    }
+
+    public function test_web_booking_requires_a_valid_form_key(): void
+    {
+        $customer = User::factory()->create();
+        $center = ServiceCenter::factory()->published()->create();
+
+        $this->actingAs($customer)->post(route('bookings.store', $center->slug), [
+            'service_id' => Service::factory()->create()->id,
+            'customer_phone' => '01012345678',
+            'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
+        ])->assertSessionHasErrors('idempotency_key');
+
+        $this->assertDatabaseCount('bookings', 0);
+    }
+
     public function test_store_rejects_past_date_and_invalid_phone(): void
     {
         $this->travelTo('2026-09-24 10:00:00');
@@ -86,6 +164,7 @@ class BookingControllerTest extends TestCase
         $this->actingAs($customer)
             ->from(route('service-centers.show', $serviceCenter->slug))
             ->post(route('bookings.store', $serviceCenter->slug), [
+                'idempotency_key' => (string) Str::uuid(),
                 'service_id' => $service->id,
                 'customer_phone' => '123',
                 'scheduled_at' => '2026-09-23T11:00',
@@ -93,8 +172,16 @@ class BookingControllerTest extends TestCase
             ->assertRedirect(route('service-centers.show', $serviceCenter->slug))
             ->assertSessionHasErrors([
                 'customer_phone' => 'أدخل رقم موبايل مصري صحيحًا.',
-                'scheduled_at' => 'موعد الحجز يجب أن يكون في المستقبل.',
             ]);
+
+        $this->actingAs($customer)
+            ->post(route('bookings.store', $serviceCenter->slug), [
+                'idempotency_key' => (string) Str::uuid(),
+                'service_id' => $service->id,
+                'customer_phone' => '01012345678',
+                'scheduled_at' => '2026-09-23T11:00',
+            ])
+            ->assertSessionHasErrors(['scheduled_at' => 'موعد الحجز يجب أن يكون في المستقبل.']);
 
         $this->assertDatabaseCount('bookings', 0);
     }
@@ -108,6 +195,7 @@ class BookingControllerTest extends TestCase
 
         $this->actingAs($customer)
             ->post(route('bookings.store', $serviceCenter->slug), [
+                'idempotency_key' => (string) Str::uuid(),
                 'service_id' => $otherService->id,
                 'customer_phone' => '01012345678',
                 'scheduled_at' => now()->addDay()->format('Y-m-d\TH:i'),
@@ -127,6 +215,7 @@ class BookingControllerTest extends TestCase
 
         $this->actingAs($customer)
             ->post(route('bookings.store', $booking->serviceCenter->slug), [
+                'idempotency_key' => (string) Str::uuid(),
                 'service_id' => $booking->service_id,
                 'customer_phone' => '01012345678',
                 'scheduled_at' => $booking->scheduled_at->format('Y-m-d\TH:i:s'),

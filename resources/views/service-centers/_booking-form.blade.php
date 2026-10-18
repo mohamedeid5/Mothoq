@@ -25,15 +25,17 @@
         <p class="mt-3 text-xs leading-6 text-slate-600">يجب أن تنتهي الخدمة قبل الإغلاق أو عنده. قد تختلف المواعيد في التواريخ الاستثنائية، ويؤكد الخادم صلاحية الموعد.</p>
     </details>
 
-    @if ($errors->hasAny(['service_id', 'customer_phone', 'scheduled_at', 'notes', 'schedule', 'booking_capacity']))
+    @if ($errors->hasAny(['service_id', 'customer_phone', 'scheduled_at', 'notes', 'schedule', 'booking_capacity', 'idempotency_key']))
         <div role="alert" class="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{{ $errors->first() }}</div>
     @endif
 
     @if ($serviceCenter->booking_capacity === null)
         <p role="status" class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">الحجز غير متاح حاليًا حتى يحدد المركز سعة الحجوزات.</p>
     @else
-    <form method="POST" action="{{ route('bookings.store', $serviceCenter->slug) }}" class="mt-5 grid gap-4">
+    <form method="POST" action="{{ route('bookings.store', $serviceCenter->slug) }}" data-booking-form class="mt-5 grid gap-4">
         @csrf
+        <input type="hidden" name="idempotency_key" value="{{ old('booking_center_slug') === $serviceCenter->slug && old('idempotency_key') ? old('idempotency_key') : (string) \Illuminate\Support\Str::uuid() }}">
+        <input type="hidden" name="booking_center_slug" value="{{ $serviceCenter->slug }}">
 
         <label class="grid gap-2 text-sm font-black text-slate-700">الخدمة المطلوبة
             <select name="service_id" required class="h-12 rounded-xl border border-slate-200 bg-slate-50 px-3 font-normal outline-none focus:border-brand-500">
