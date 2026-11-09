@@ -91,6 +91,8 @@
 
             @include('service-centers._booking-capacity-form', ['routePrefix' => 'owner'])
 
+            @include('service-centers._service-durations-form')
+
             @include('service-centers._opening-hours-form', [
                 'serviceCenter' => $serviceCenter,
                 'action' => route('owner.service-centers.opening-hours.update', $serviceCenter),

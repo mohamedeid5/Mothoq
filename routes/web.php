@@ -20,6 +20,7 @@ use App\Http\Controllers\Web\Owner\CenterImageController as OwnerCenterImageCont
 use App\Http\Controllers\Web\Owner\OpeningHourController as OwnerOpeningHourController;
 use App\Http\Controllers\Web\Owner\ScheduleExceptionController as OwnerScheduleExceptionController;
 use App\Http\Controllers\Web\Owner\ServiceCenterController as OwnerServiceCenterController;
+use App\Http\Controllers\Web\Owner\ServiceDurationController as OwnerServiceDurationController;
 use App\Http\Controllers\Web\ReviewController;
 use App\Http\Controllers\Web\ServiceCenterController;
 use Illuminate\Support\Facades\Route;
@@ -89,6 +90,8 @@ Route::middleware('auth')->group(function (): void {
                 ->whereNumber(['serviceCenter', 'scheduleException'])->name('service-centers.schedule-exceptions.destroy');
             Route::patch('/centers/{serviceCenter}/booking-capacity', [OwnerBookingCapacityController::class, 'update'])
                 ->whereNumber('serviceCenter')->name('service-centers.booking-capacity.update');
+            Route::patch('/centers/{serviceCenter}/services/{service}/duration', [OwnerServiceDurationController::class, 'update'])
+                ->whereNumber(['serviceCenter', 'service'])->name('service-centers.services.duration.update');
             Route::patch('/centers/{serviceCenter}/opening-hours', [OwnerOpeningHourController::class, 'update'])
                 ->whereNumber('serviceCenter')
                 ->name('service-centers.opening-hours.update');
