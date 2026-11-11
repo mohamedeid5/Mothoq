@@ -1,17 +1,18 @@
 <x-mail::message>
 # حجز جديد
 
-مرحبًا {{ $booking->serviceCenter->owner->name }}،
+مرحبًا {{ $details->ownerName }}،
 
-وصل طلب حجز جديد إلى **{{ $booking->serviceCenter->name }}**.
+وصل طلب حجز جديد إلى **{{ $details->centerName }}**.
 
-- **العميل:** {{ $booking->customer->name }}
-- **الخدمة:** {{ $booking->service->name }}
-- **الموعد المطلوب:** {{ $booking->scheduleLabel() }}
-- **رقم التواصل:** {{ $booking->customer_phone }}
+- **العميل:** {{ $details->customerName }}
+- **رقم الحجز:** {{ $details->bookingId }}
+- **الخدمة:** {{ $details->serviceName }}
+- **الموعد المطلوب:** {{ $details->scheduleLabel }}
+- **رقم التواصل:** {{ $details->customerPhone }}
 
-@if ($booking->notes)
-**ملاحظات العميل:** {{ $booking->notes }}
+@if ($details->notes)
+**ملاحظات العميل:** {{ $details->notes }}
 @endif
 
 <x-mail::button :url="route('owner.bookings.index')">

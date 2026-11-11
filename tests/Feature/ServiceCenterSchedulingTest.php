@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Enums\BookingNotificationType;
 use App\Enums\BookingStatus;
 use App\Enums\DayOfWeek;
 use App\Enums\ServiceCenterStatus;
-use App\Mail\BookingCreatedConfirmation;
 use App\Models\Booking;
 use App\Models\OpeningHour;
+use App\Models\OutboxMessage;
 use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\ServiceCenterScheduleException;
@@ -58,11 +59,12 @@ class ServiceCenterSchedulingTest extends TestCase
         if ($status === 201) {
             $response->assertJsonPath('data.duration_minutes', $duration)->assertJsonMissingPath('data.scheduled_at_timezone');
             $this->assertDatabaseHas('bookings', ['scheduled_at' => $storedTime, 'duration_minutes' => $duration]);
-            Mail::assertQueued(BookingCreatedConfirmation::class);
+            $this->assertSame(1, OutboxMessage::query()->where('type', BookingNotificationType::CustomerConfirmation)->count());
         } else {
             $response->assertJsonValidationErrors('scheduled_at');
             $this->assertDatabaseCount('bookings', 0);
             Mail::assertNothingQueued();
+            $this->assertDatabaseCount('outbox_messages', 0);
         }
     }
 
@@ -99,6 +101,7 @@ class ServiceCenterSchedulingTest extends TestCase
         if ($status === 422) {
             $response->assertJsonValidationErrors('scheduled_at');
             Mail::assertNothingQueued();
+            $this->assertDatabaseCount('outbox_messages', 0);
         }
     }
 
@@ -114,6 +117,7 @@ class ServiceCenterSchedulingTest extends TestCase
 
         $this->assertDatabaseCount('bookings', 0);
         Mail::assertNothingQueued();
+        $this->assertDatabaseCount('outbox_messages', 0);
     }
 
     public function test_snapshot_survives_duration_changes_and_same_service_has_different_center_durations(): void
@@ -409,7 +413,7 @@ class ServiceCenterSchedulingTest extends TestCase
             ->assertJsonPath('errors.scheduled_at.0', 'لديك حجز قائم في نفس المركز وفي نفس الموعد.');
 
         $this->assertDatabaseCount('bookings', 1);
-        Mail::assertQueued(BookingCreatedConfirmation::class, 1);
+        $this->assertSame(1, OutboxMessage::query()->where('type', BookingNotificationType::CustomerConfirmation)->count());
     }
 
     public function test_exception_and_booking_use_the_same_local_calendar_date(): void
@@ -510,6 +514,7 @@ class ServiceCenterSchedulingTest extends TestCase
         if ($status === 422) {
             $response->assertJsonPath('errors.scheduled_at.0', 'موعد الحجز يجب أن يكون في المستقبل.');
             Mail::assertNothingQueued();
+            $this->assertDatabaseCount('outbox_messages', 0);
         }
     }
 

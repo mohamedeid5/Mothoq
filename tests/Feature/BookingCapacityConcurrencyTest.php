@@ -8,6 +8,7 @@ use App\Models\OpeningHour;
 use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -26,6 +27,9 @@ class BookingCapacityConcurrencyTest extends TestCase
         if (! str_ends_with(DB::connection()->getDatabaseName(), '_test')) {
             $this->fail('Concurrency tests require a disposable database ending in _test.');
         }
+        $this->beforeApplicationDestroyed(static function (): void {
+            RefreshDatabaseState::$migrated = false;
+        });
         $this->artisan('migrate:fresh', ['--force' => true, '--no-interaction' => true])->assertSuccessful();
     }
 

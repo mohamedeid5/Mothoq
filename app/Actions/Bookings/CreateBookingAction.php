@@ -5,31 +5,28 @@ namespace App\Actions\Bookings;
 use App\Actions\ServiceCenters\ResolveScheduleAction;
 use App\Data\Bookings\CreateBookingData;
 use App\Enums\BookingStatus;
-use App\Mail\BookingCreatedConfirmation;
-use App\Mail\NewBookingReceived;
 use App\Models\Booking;
 use App\Models\ServiceCenter;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 final class CreateBookingAction
 {
-    public function __construct(private readonly ResolveScheduleAction $schedules, private readonly ValidateBookingCapacityAction $capacity) {}
+    public function __construct(
+        private readonly ResolveScheduleAction $schedules,
+        private readonly ValidateBookingCapacityAction $capacity,
+        private readonly RecordBookingNotificationsAction $notifications,
+    ) {}
 
     public function handle(User $customer, ServiceCenter $serviceCenter, CreateBookingData $data): Booking
     {
-        $booking = DB::transaction(fn (): Booking => $this->createInTransaction($customer, $serviceCenter, $data), 3);
-
-        $this->notifyCreated($booking);
-
-        return $booking;
+        return DB::transaction(fn (): Booking => $this->createInTransaction($customer, $serviceCenter, $data), 3);
     }
 
-    /** The caller must own the transaction and send notifications only after it commits. */
+    /** The caller must own the transaction; notification intent is saved atomically with the booking. */
     public function createInTransaction(User $customer, ServiceCenter $serviceCenter, CreateBookingData $data, ?Closure $afterCenterLock = null): Booking
     {
         $lockedServiceCenter = ServiceCenter::query()
@@ -93,18 +90,10 @@ final class CreateBookingAction
             'status' => BookingStatus::Pending,
         ]);
 
-        return $booking->load($this->relations());
-    }
+        $booking->load($this->relations());
+        $this->notifications->handle($booking);
 
-    public function notifyCreated(Booking $booking): void
-    {
-        Mail::to($booking->customer)->send(new BookingCreatedConfirmation($booking));
-        $owner = $booking->serviceCenter->owner;
-
-        if ($owner !== null) {
-            Mail::to($owner)->send(new NewBookingReceived($booking));
-        }
-
+        return $booking;
     }
 
     /** @return list<string> */

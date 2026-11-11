@@ -2,9 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\BookingNotificationType;
 use App\Enums\DayOfWeek;
-use App\Mail\BookingCreatedConfirmation;
 use App\Models\OpeningHour;
+use App\Models\OutboxMessage;
 use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
@@ -55,11 +56,12 @@ class BookingOpeningHoursTest extends TestCase
         if ($accepted) {
             $response->assertCreated();
             $this->assertDatabaseCount('bookings', 1);
-            Mail::assertQueued(BookingCreatedConfirmation::class);
+            $this->assertSame(1, OutboxMessage::query()->where('type', BookingNotificationType::CustomerConfirmation)->count());
         } else {
             $response->assertUnprocessable()->assertJsonValidationErrors('scheduled_at');
             $this->assertDatabaseCount('bookings', 0);
             Mail::assertNothingQueued();
+            $this->assertDatabaseCount('outbox_messages', 0);
         }
     }
 
@@ -108,6 +110,7 @@ class BookingOpeningHoursTest extends TestCase
 
         $this->assertDatabaseCount('bookings', 0);
         Mail::assertNothingQueued();
+        $this->assertDatabaseCount('outbox_messages', 0);
     }
 
     public function test_booking_form_shows_working_hours_closed_and_unconfigured_days(): void
@@ -146,6 +149,6 @@ class BookingOpeningHoursTest extends TestCase
             ])->assertCreated();
 
         $this->assertDatabaseHas('bookings', ['scheduled_at' => '2026-09-24 22:00:00']);
-        Mail::assertQueued(BookingCreatedConfirmation::class);
+        $this->assertSame(1, OutboxMessage::query()->where('type', BookingNotificationType::CustomerConfirmation)->count());
     }
 }

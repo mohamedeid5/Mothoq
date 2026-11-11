@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Data\Bookings\BookingMailData;
 use App\Models\Booking;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -17,7 +18,7 @@ class BookingCreatedConfirmation extends Mailable implements ShouldQueue
 
     public int $tries = 3;
 
-    public function __construct(public Booking $booking)
+    public function __construct(public Booking|BookingMailData $booking)
     {
         $this->onQueue('emails');
         $this->afterCommit();
@@ -35,7 +36,7 @@ class BookingCreatedConfirmation extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "تم استلام طلب حجزك لدى {$this->booking->serviceCenter->name}",
+            subject: "تم استلام طلب حجزك لدى {$this->details()->centerName}",
         );
     }
 
@@ -46,6 +47,7 @@ class BookingCreatedConfirmation extends Mailable implements ShouldQueue
     {
         return new Content(
             markdown: 'mail.bookings.booking-created-confirmation',
+            with: ['details' => $this->details()],
         );
     }
 
@@ -57,5 +59,12 @@ class BookingCreatedConfirmation extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         return [];
+    }
+
+    private function details(): BookingMailData
+    {
+        return $this->booking instanceof BookingMailData
+            ? $this->booking
+            : BookingMailData::fromBooking($this->booking);
     }
 }

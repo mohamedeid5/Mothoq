@@ -97,8 +97,18 @@ jobs:
       - run: |
           cp .env.example .env
           php artisan key:generate --no-interaction
-      - name: Test capacity behavior, migrations, forms, and independent MySQL sessions
-        run: php artisan test --compact tests/Feature/BookingCapacityTest.php tests/Feature/BookingCapacityMigrationTest.php tests/Feature/WebBookingCapacityTest.php tests/Feature/BookingCapacityConcurrencyTest.php
+      - name: Test capacity, idempotency, migrations, forms, and independent MySQL sessions
+        run: >-
+          php artisan test --compact
+          tests/Feature/BookingCapacityTest.php
+          tests/Feature/BookingCapacityMigrationTest.php
+          tests/Feature/WebBookingCapacityTest.php
+          tests/Feature/BookingCapacityConcurrencyTest.php
+          tests/Feature/BookingIdempotencyTest.php
+          tests/Feature/BookingIdempotencyConcurrencyTest.php
+          tests/Feature/BookingOutboxTest.php
+          tests/Feature/OutboxProcessingTest.php
+          tests/Feature/OutboxConcurrencyTest.php
 
   frontend:
     name: Frontend build

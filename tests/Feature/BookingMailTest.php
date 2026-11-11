@@ -7,6 +7,8 @@ use App\Mail\BookingCreatedConfirmation;
 use App\Mail\BookingStatusUpdated;
 use App\Mail\NewBookingReceived;
 use App\Models\Booking;
+use App\Models\ServiceCenter;
+use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
 
@@ -16,10 +18,13 @@ class BookingMailTest extends TestCase
 
     public function test_booking_created_confirmation_email_contains_booking_details(): void
     {
-        $booking = Booking::factory()->create([
-            'customer_phone' => '01012345678',
-            'notes' => 'فحص صوت المحرك.',
-        ])->load(['customer', 'serviceCenter', 'service']);
+        $booking = Booking::factory()
+            ->for(User::factory()->state(['name' => 'أحمد']), 'customer')
+            ->for(ServiceCenter::factory()->state(['name' => 'مركز الاختبار']))
+            ->create([
+                'customer_phone' => '01012345678',
+                'notes' => 'فحص صوت المحرك.',
+            ])->load(['customer', 'serviceCenter', 'service']);
         $mailable = new BookingCreatedConfirmation($booking);
 
         $mailable
@@ -33,10 +38,13 @@ class BookingMailTest extends TestCase
 
     public function test_new_booking_email_contains_booking_details(): void
     {
-        $booking = Booking::factory()->create([
-            'customer_phone' => '01012345678',
-            'notes' => 'فحص صوت المحرك.',
-        ])->load(['customer', 'serviceCenter.owner', 'service']);
+        $booking = Booking::factory()
+            ->for(User::factory()->state(['name' => 'أحمد']), 'customer')
+            ->for(ServiceCenter::factory()->for(User::factory()->centerOwner()->state(['name' => 'محمد']), 'owner')->state(['name' => 'مركز الاختبار']))
+            ->create([
+                'customer_phone' => '01012345678',
+                'notes' => 'فحص صوت المحرك.',
+            ])->load(['customer', 'serviceCenter.owner', 'service']);
         $mailable = new NewBookingReceived($booking);
 
         $mailable
@@ -50,9 +58,12 @@ class BookingMailTest extends TestCase
 
     public function test_status_updated_email_contains_new_status_and_center_note(): void
     {
-        $booking = Booking::factory()->accepted()->create([
-            'status_note' => 'تم تأكيد الموعد.',
-        ])->load(['customer', 'serviceCenter', 'service']);
+        $booking = Booking::factory()->accepted()
+            ->for(User::factory()->state(['name' => 'أحمد']), 'customer')
+            ->for(ServiceCenter::factory()->state(['name' => 'مركز الاختبار']))
+            ->create([
+                'status_note' => 'تم تأكيد الموعد.',
+            ])->load(['customer', 'serviceCenter', 'service']);
         $mailable = new BookingStatusUpdated($booking);
 
         $mailable

@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -101,6 +102,29 @@ class BookingControllerTest extends TestCase
             ->assertJsonPath('data.status', BookingStatus::Cancelled->value);
 
         $this->assertSame(BookingStatus::Cancelled, $booking->fresh()->status);
+    }
+
+    public function test_cancellation_returns_422_when_booking_is_accepted_after_authorization(): void
+    {
+        $customer = User::factory()->create();
+        $booking = Booking::factory()->for($customer, 'customer')->create();
+        Gate::after(function (User $user, string $ability, ?bool $result, array $arguments) use ($booking): void {
+            if ($ability === 'cancel' && $result === true && $arguments[0]->id === $booking->id) {
+                Booking::query()->whereKey($booking->id)->update(['status' => BookingStatus::Accepted]);
+            }
+        });
+
+        $this->actingWithToken($customer)
+            ->deleteJson(route('api.v1.bookings.destroy', $booking))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['booking'])
+            ->assertJsonPath('errors.booking.0', 'لا يمكن إلغاء الحجز بعد معالجته من المركز.');
+
+        $this->assertDatabaseHas('bookings', [
+            'id' => $booking->id,
+            'status' => BookingStatus::Accepted->value,
+            'cancelled_at' => null,
+        ]);
     }
 
     public function test_customer_cannot_cancel_another_customers_booking_and_receives_404(): void

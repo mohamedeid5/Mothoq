@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Web;
 
+use App\Enums\BookingNotificationType;
 use App\Enums\BookingStatus;
 use App\Enums\DayOfWeek;
-use App\Mail\BookingCreatedConfirmation;
-use App\Mail\NewBookingReceived;
 use App\Models\Booking;
 use App\Models\OpeningHour;
+use App\Models\OutboxMessage;
 use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
@@ -63,18 +63,18 @@ class BookingControllerTest extends TestCase
             'status' => BookingStatus::Pending->value,
         ]);
 
-        Mail::assertQueued(
-            NewBookingReceived::class,
-            fn (NewBookingReceived $mail): bool => $mail->hasTo($serviceCenter->owner->email)
-                && $mail->booking->service_center_id === $serviceCenter->id
-                && $mail->queue === 'emails',
-        );
-        Mail::assertQueued(
-            BookingCreatedConfirmation::class,
-            fn (BookingCreatedConfirmation $mail): bool => $mail->hasTo($customer->email)
-                && $mail->booking->service_center_id === $serviceCenter->id
-                && $mail->queue === 'emails',
-        );
+        $booking = Booking::query()->sole();
+        $this->assertDatabaseHas('outbox_messages', [
+            'booking_id' => $booking->id,
+            'type' => BookingNotificationType::OwnerNotification->value,
+            'recipient' => $serviceCenter->owner->email,
+        ]);
+        $this->assertDatabaseHas('outbox_messages', [
+            'booking_id' => $booking->id,
+            'type' => BookingNotificationType::CustomerConfirmation->value,
+            'recipient' => $customer->email,
+        ]);
+        Mail::assertNothingOutgoing();
     }
 
     public function test_repeating_the_same_web_form_creates_one_booking_and_sends_one_set_of_emails(): void
@@ -105,8 +105,8 @@ class BookingControllerTest extends TestCase
 
         $this->assertDatabaseCount('bookings', 1);
         $this->assertDatabaseCount('idempotency_keys', 1);
-        Mail::assertQueued(BookingCreatedConfirmation::class, 1);
-        Mail::assertQueued(NewBookingReceived::class, 1);
+        $this->assertSame(1, OutboxMessage::query()->where('type', BookingNotificationType::CustomerConfirmation)->count());
+        $this->assertSame(1, OutboxMessage::query()->where('type', BookingNotificationType::OwnerNotification)->count());
     }
 
     public function test_web_form_preserves_its_key_after_validation_error_and_rejects_changed_replay(): void
@@ -206,6 +206,7 @@ class BookingControllerTest extends TestCase
 
         $this->assertDatabaseCount('bookings', 0);
         Mail::assertNothingQueued();
+        $this->assertDatabaseCount('outbox_messages', 0);
     }
 
     public function test_customer_cannot_create_duplicate_active_booking_at_same_center_and_time(): void

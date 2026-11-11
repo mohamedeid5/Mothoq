@@ -1,16 +1,17 @@
 <x-mail::message>
 # تم استلام طلب حجزك
 
-مرحبًا {{ $booking->customer->name }}،
+مرحبًا {{ $details->customerName }}،
 
-تم استلام طلب حجزك لدى **{{ $booking->serviceCenter->name }}**، وحالته الآن **{{ $booking->status->label() }}**.
+تم استلام طلب حجزك لدى **{{ $details->centerName }}**، وكانت حالته وقت الطلب **{{ $details->statusLabel }}**.
 
-- **الخدمة:** {{ $booking->service->name }}
-- **الموعد المطلوب:** {{ $booking->scheduleLabel() }}
-- **رقم التواصل:** {{ $booking->customer_phone }}
+- **رقم الحجز:** {{ $details->bookingId }}
+- **الخدمة:** {{ $details->serviceName }}
+- **الموعد المطلوب:** {{ $details->scheduleLabel }}
+- **رقم التواصل:** {{ $details->customerPhone }}
 
-@if ($booking->notes)
-**ملاحظاتك:** {{ $booking->notes }}
+@if ($details->notes)
+**ملاحظاتك:** {{ $details->notes }}
 @endif
 
 سيصلك تحديث جديد عند قبول المركز للحجز أو رفضه.

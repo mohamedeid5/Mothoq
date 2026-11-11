@@ -30,7 +30,12 @@ enum BookingStatus: string
                 ],
                 true
             ),
-            self::Accepted => $status === self::Completed,
+            self::Accepted => in_array($status,
+                [
+                    self::Cancelled, self::Completed,
+                ],
+                true
+            ),
             self::Rejected, self::Cancelled, self::Completed => false,
         };
     }

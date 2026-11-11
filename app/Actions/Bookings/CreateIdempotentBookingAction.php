@@ -27,8 +27,7 @@ final class CreateIdempotentBookingAction
 
         for ($attempt = 0; $attempt < 3; $attempt++) {
             try {
-                /** @var array{Booking, string} $created */
-                $created = DB::transaction(function () use ($customer, $center, $data, $keyHash, $requestHash): array {
+                $body = DB::transaction(function () use ($customer, $center, $data, $keyHash, $requestHash): string {
                     try {
                         $claimId = DB::table('idempotency_keys')->insertGetId([
                             'customer_id' => $customer->id,
@@ -64,11 +63,8 @@ final class CreateIdempotentBookingAction
                         'updated_at' => now(),
                     ]);
 
-                    return [$booking, $body];
+                    return $body;
                 }, 3);
-
-                [$booking, $body] = $created;
-                $this->bookings->notifyCreated($booking);
 
                 return JsonResponse::fromJsonString($body, 201);
             } catch (IdempotencyClaimConflict) {

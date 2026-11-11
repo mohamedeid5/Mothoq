@@ -20,7 +20,7 @@ final class CancelBookingAction
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if (! $lockedBooking->status->canTransitionTo(BookingStatus::Cancelled)) {
+            if ($lockedBooking->status !== BookingStatus::Pending) {
                 throw ValidationException::withMessages([
                     'booking' => 'لا يمكن إلغاء الحجز بعد معالجته من المركز.',
                 ]);

@@ -17,7 +17,8 @@ final class UpdateScheduleExceptionAction
             $center = ServiceCenter::query()->whereKey($center->id)->lockForUpdate()->firstOrFail();
             $exception = $center->scheduleExceptions()->updateOrCreate(
                 ['date' => $data['date']],
-                ['is_closed' => $data['is_closed'],
+                [
+                    'is_closed' => $data['is_closed'],
                     'opens_at' => $data['opens_at'] ?? null,
                     'closes_at' => $data['closes_at'] ?? null,
                 ],

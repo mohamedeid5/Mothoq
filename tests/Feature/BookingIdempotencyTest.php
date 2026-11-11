@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Enums\BookingNotificationType;
 use App\Enums\BookingStatus;
 use App\Enums\DayOfWeek;
 use App\Enums\ServiceCenterStatus;
-use App\Mail\BookingCreatedConfirmation;
-use App\Mail\NewBookingReceived;
 use App\Models\Booking;
 use App\Models\OpeningHour;
+use App\Models\OutboxMessage;
 use App\Models\Service;
 use App\Models\ServiceCenter;
 use App\Models\User;
@@ -50,8 +50,8 @@ class BookingIdempotencyTest extends TestCase
         $this->assertSame($originalBody, $replay->getContent());
         $this->assertSame($bookingId, $replay->json('data.id'));
         $this->assertDatabaseCount('bookings', 1);
-        Mail::assertQueued(BookingCreatedConfirmation::class, 1);
-        Mail::assertQueued(NewBookingReceived::class, 1);
+        $this->assertSame(1, OutboxMessage::query()->where('type', BookingNotificationType::CustomerConfirmation)->count());
+        $this->assertSame(1, OutboxMessage::query()->where('type', BookingNotificationType::OwnerNotification)->count());
     }
 
     public function test_equivalent_local_datetime_reuses_the_original_result(): void

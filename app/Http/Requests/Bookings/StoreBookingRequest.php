@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Bookings;
 
 use App\Data\Bookings\CreateBookingData;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreBookingRequest extends FormRequest
@@ -38,7 +37,11 @@ class StoreBookingRequest extends FormRequest
     /** @return array<string, mixed> */
     public function validationData(): array
     {
-        return [...parent::validationData(), 'idempotency_key' => $this->is('api/*') ? $this->header('Idempotency-Key') : $this->input('idempotency_key')];
+        return [
+            ...parent::validationData(),
+            'idempotency_key' => $this->is('api/*')
+                ? $this->header('Idempotency-Key')
+                : $this->input('idempotency_key')];
     }
 
     public function idempotencyKey(): string

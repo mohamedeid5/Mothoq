@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('horizon:snapshot')->everyFiveMinutes()->onOneServer()->withoutOverlapping();
 Schedule::command('bookings:prune-idempotency-keys')->hourly()->onOneServer()->withoutOverlapping();
+Schedule::command('outbox:dispatch')->everyMinute()->onOneServer()->withoutOverlapping(5);
