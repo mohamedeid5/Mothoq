@@ -11,6 +11,8 @@ x-app: &app
   depends_on:
     redis:
       condition: service_healthy
+    mysql:
+      condition: service_healthy
   logging: &logging
     driver: awslogs
     options:
@@ -62,7 +64,6 @@ services:
     command: php artisan schedule:work --no-interaction
 
   mysql:
-    profiles: [legacy]
     image: mysql:8.4
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:?Set DB_DATABASE in .env.production}
@@ -74,7 +75,7 @@ services:
       - --max-connections=50
       - --performance-schema=OFF
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_data_v2:/var/lib/mysql
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
@@ -106,6 +107,6 @@ services:
     logging: *logging
 
 volumes:
-  mysql_data:
+  mysql_data_v2:
   redis_data:
   storage_data:
